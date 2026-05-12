@@ -15,11 +15,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Reference data — order matters (countries before entities, etc.)
+        $this->call([
+            CountrySeeder::class,
+            TaxRateSeeder::class,
+            ContactFunctionSeeder::class,
+            CalendarTypeSeeder::class,
+            CalendarActionSeeder::class,
+            PermissionSeeder::class,
+            \Database\Seeders\EntitySeeder::class,
         ]);
+
+        // Default admin user
+        User::firstOrCreate(
+            ['email' => 'admin@inovcorp.pt'],
+            [
+                'name'     => 'Administrador',
+                'password' => bcrypt('password'),
+            ]
+        );
     }
 }

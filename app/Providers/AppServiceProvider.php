@@ -2,10 +2,35 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Events\InvoicePaid;
+use App\Events\OrderCreated;
+use App\Events\ProposalCreated;
+use App\Listeners\SendPaymentProofEmail;
+use App\Listeners\StoreInvoicePaidNotification;
+use App\Listeners\StoreOrderCreatedNotification;
+use App\Listeners\StoreProposalCreatedNotification;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider;
 
-class AppServiceProvider extends ServiceProvider
+class AppServiceProvider extends EventServiceProvider
 {
+    /**
+     * Event-listener mappings for the application.
+     *
+     * @var array<class-string, array<int, class-string>>
+     */
+    protected $listen = [
+        InvoicePaid::class => [
+            SendPaymentProofEmail::class,
+            StoreInvoicePaidNotification::class,
+        ],
+        ProposalCreated::class => [
+            StoreProposalCreatedNotification::class,
+        ],
+        OrderCreated::class => [
+            StoreOrderCreatedNotification::class,
+        ],
+    ];
+
     /**
      * Register any application services.
      */
@@ -19,6 +44,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        parent::boot();
     }
 }
