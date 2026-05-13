@@ -3,31 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Proposta {{ $proposal->number }}</title>
+    <title>Proposta - {{ $proposal->number ?? $document['name'] ?? '' }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #333; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1f2937; line-height: 1.6; }
+        .page { padding: 30px; }
+        .header { border-bottom: 3px solid #7c3aed; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { color: #7c3aed; font-size: 24px; font-weight: 700; }
+        .section { margin-bottom: 20px; }
+        .section-title { background: #7c3aed; color: #fff; padding: 6px 8px; font-size: 10px; font-weight: 700; margin-bottom: 8px; }
+        .section-content { padding: 10px; border: 1px solid #e9d5ff; }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .label { font-weight: 600; }
+        .value { color: #4b5563; }
+        .proposal-box { background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 10px; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; margin-top: 10px; }
+        table thead tr { background-color: #7c3aed; color: #fff; }
+        table thead th { padding: 8px 10px; text-align: left; font-size: 10px; }
+        table tbody tr:nth-child(even) { background-color: #f5f3ff; }
+        table tbody td { padding: 7px 10px; font-size: 10px; border-bottom: 1px solid #e9d5ff; }
+        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 15px; text-align: center; color: #666; font-size: 9px; }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <h1>PROPOSTA COMERCIAL</h1>
+    </div>
 
-        .header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 15px; }
-        .company-info h1 { font-size: 20px; color: #2563eb; font-weight: bold; }
-        .company-info p { font-size: 10px; color: #555; margin-top: 2px; }
-        .doc-info { text-align: right; }
-        .doc-info h2 { font-size: 18px; color: #2563eb; text-transform: uppercase; }
-        .doc-info .doc-number { font-size: 14px; font-weight: bold; color: #333; }
-        .doc-info .doc-date { font-size: 10px; color: #666; }
+    <div class="section">
+        <div class="section-title">INFORMAÇÕES DA PROPOSTA</div>
+        <div class="section-content">
+            <div class="detail-row">
+                <span class="label">Documento:</span>
+                <span class="value">{{ $proposal->number ?? $document['name'] ?? '-' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Entidade:</span>
+                <span class="value">{{ $proposal->client?->name ?? $document['entity'] ?? '-' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Data de Emissão:</span>
+                <span class="value">{{ $proposal->issued_date?->format('d/m/Y') ?? $document['date'] ?? '-' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Status:</span>
+                <span class="value">{{ $proposal->status ?? $document['status'] ?? '-' }}</span>
+            </div>
+        </div>
+    </div>
 
-        .client-section { display: flex; justify-content: space-between; margin-bottom: 25px; }
-        .client-box, .validity-box { width: 48%; }
-        .box-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #2563eb; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .client-box p, .validity-box p { font-size: 11px; line-height: 1.6; }
-        .validity-box p span { font-weight: bold; }
+    <div class="section">
+        <div class="section-title">ESCOPO DA PROPOSTA</div>
+        <div class="section-content">
+            <div class="proposal-box">
+                <p><strong>Objetivo:</strong> Esta proposta tem como objetivo apresentar uma solução sob medida para as necessidades do cliente.</p>
+            </div>
+            <p style="margin-top: 10px;">A nossa proposta inclui:</p>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li>Análise detalhada dos requisitos</li>
+                <li>Solução personalizada</li>
+                <li>Implementação e suporte</li>
+                <li>Formação e documentação</li>
+            </ul>
+        </div>
+    </div>
 
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        table thead tr { background-color: #2563eb; color: #fff; }
-        table thead th { padding: 8px 10px; text-align: left; font-size: 11px; }
-        table thead th.right { text-align: right; }
-        table tbody tr:nth-child(even) { background-color: #f8fafc; }
-        table tbody td { padding: 7px 10px; font-size: 11px; border-bottom: 1px solid #e5e7eb; }
+    @if ($proposal?->items ?? false)
+    <div class="section">
+        <div class="section-title">ITENS DA PROPOSTA</div>
+        <div class="section-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th style="text-align: right;">Quantidade</th>
+                        <th style="text-align: right;">Preço Unitário</th>
+                        <th style="text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($proposal->items as $item)
+                    <tr>
+                        <td>{{ $item->description }}</td>
+                        <td style="text-align: right;">{{ $item->quantity }}</td>
+                        <td style="text-align: right;">{{ number_format($item->unit_price, 2, ',', '.') }} €</td>
+                        <td style="text-align: right;">{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }} €</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
+    <div class="section">
+        <div class="section-title">VALIDADE</div>
+        <div class="section-content">
+            <p>Esta proposta é válida por {{ $proposal->validity_days ?? '30' }} dias a contar da data de emissão.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Documento gerado em {{ now()->format('d/m/Y H:i') }}</p>
+        <p>Arquivo Digital - Sistema de Gestão</p>
+    </div>
+</div>
+</body>
+</html>
         table tbody td.right { text-align: right; }
 
         .totals-section { display: flex; justify-content: flex-end; margin-bottom: 30px; }

@@ -150,6 +150,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/invoices/{invoice}', [InvoiceController::class, 'update']);
         Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy']);
         Route::post('/invoices/{invoice}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);
+        Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+        Route::get('/invoices/{invoice}/download-pdf', [InvoiceController::class, 'downloadPdf']);
+        Route::get('/invoices-template-pdf', [InvoiceController::class, 'templatePdf']);
+
+        // Archive Documents
+        Route::get('/archive-documents-pdf', [InvoiceController::class, 'archiveDocumentPdf']);
 
         // Calendar Events
         Route::get('/calendar-events', [CalendarController::class, 'index']);
@@ -200,15 +206,16 @@ Route::middleware('auth:sanctum')->group(function () {
             return response()->json(null, 204);
         });
 
-        // Users
-        Route::get('/users', [UserController::class, 'index']);
-        Route::post('/users', [UserController::class, 'store']);
-        Route::get('/users/{user}', [UserController::class, 'show']);
-        Route::put('/users/{user}', [UserController::class, 'update']);
-        Route::put('/users/{user}/password', [UserController::class, 'updatePassword']);
-        Route::post('/users/{user}/toggle', [UserController::class, 'toggle']);
-
-        // Activity Logs
+        // Orders
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/orders/{order}', [OrderController::class, 'show']);
+        Route::put('/orders/{order}', [OrderController::class, 'update']);
+        Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
+        Route::get('/orders/{order}/pdf', [OrderController::class, 'pdf']);
+        Route::get('/orders/{order}/download-pdf', [OrderController::class, 'downloadPdf']);
+        Route::get('/orders-template-pdf', [OrderController::class, 'templatePdf']);
+        Route::post('/orders/{order}/convert-to-supplier-orders', [OrderController::class, 'convertToSupplierOrders']);
         Route::get('/activity-logs', [ActivityLogController::class, 'index']);
         Route::get('/activity-logs/{activity}', [ActivityLogController::class, 'show']);
     });

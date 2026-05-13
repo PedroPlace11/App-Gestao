@@ -181,5 +181,28 @@ class OrderController extends Controller
     {
         return $this->pdfService->generate($order)->download("encomenda-{$order->number}.pdf");
     }
+
+    /**
+     * Generate a PDF for order examples from query payload.
+     */
+    public function templatePdf(Request $request): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'number' => 'required|string|max:50',
+            'date' => 'required|date',
+            'client_id' => 'nullable|integer',
+            'client_name' => 'nullable|string|max:255',
+            'status' => 'required|string|in:draft,closed',
+            'total_value' => 'required|numeric|min:0',
+        ]);
+
+        $order = new Order($validated);
+        $order->id = 1; // Dummy ID for example orders
+        $order->entity = (object)['name' => $validated['client_name'] ?? 'Cliente Exemplo'];
+
+        $pdf = $this->pdfService->generate($order);
+
+        return $pdf->download("encomenda-{$validated['number']}.pdf");
+    }
 }
 

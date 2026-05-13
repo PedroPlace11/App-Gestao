@@ -8,10 +8,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentProofMail;
+use App\Services\InvoicePdfService;
+use App\Services\ArchiveDocumentPdfService;
 use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
+    public function __construct(
+        private InvoicePdfService $pdfService,
+        private ArchiveDocumentPdfService $archiveDocumentPdfService,
+    ) {
+    }
+
     /**
      * Display a listing of invoices.
      */
@@ -158,6 +166,70 @@ class InvoiceController extends Controller
             'message' => 'Fatura marcada como paga. Comprovativo de pagamento enviado por email.',
             'invoice' => $invoice,
         ]);
+    }
+
+    /**
+     * Generate and download PDF for the invoice.
+     */
+    public function pdf(Invoice $invoice)
+    {
+        $pdf = $this->pdfService->generate($invoice);
+
+        $filename = "fatura_fornecedor_{$invoice->number}.pdf";
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Download PDF alias endpoint.
+     */
+    public function downloadPdf(Invoice $invoice): \Illuminate\Http\Response
+    {
+        return $this->pdfService->generate($invoice)->download("fatura-fornecedor-{$invoice->number}.pdf");
+    }
+
+    /**
+     * Generate a PDF using template from query payload (for UI example rows not persisted in DB).
+     */
+    public function templatePdf(Request $request): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'number' => 'required|string|max:50',
+            'issue_date' => 'required|date',
+            'due_date' => 'required|date',
+            'supplier_id' => 'nullable|integer',
+            'supplier_name' => 'nullable|string|max:255',
+            'supplier_nif' => 'nullable|string|max:50',
+            'supplier_address' => 'nullable|string|max:255',
+            'supplier_postal_code' => 'nullable|string|max:20',
+            'supplier_city' => 'nullable|string|max:100',
+            'supplier_email' => 'nullable|string|max:255',
+            'total_value' => 'required|numeric|min:0',
+            'status' => 'nullable|in:pending,paid',
+            'item_name' => 'nullable|string|max:255',
+            'item_description' => 'nullable|string|max:255',
+        ]);
+
+        return $this->pdfService->generateFromPayload($validated)
+            ->download("fatura-fornecedor-{$validated['number']}.pdf");
+    }
+
+    /**
+     * Generate a PDF for archive documents (Contrato, Comprovativo, Proposta, Fatura).
+     */
+    public function archiveDocumentPdf(Request $request): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string|in:Fatura,Contrato,Proposta,Comprovativo',
+            'entity' => 'required|string|max:255',
+            'date' => 'required|date',
+            'status' => 'required|string|in:Ativo,Arquivado',
+        ]);
+
+        $pdf = $this->archiveDocumentPdfService->generate($validated);
+
+        return $pdf->download($validated['name']);
     }
 }
 

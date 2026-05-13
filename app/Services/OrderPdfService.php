@@ -10,7 +10,7 @@ class OrderPdfService
 {
     public function generate(Order $order): \Barryvdh\DomPDF\PDF
     {
-        $order->load(['entity', 'user', 'proposal']);
+        $order->load(['entity', 'user']);
 
         $company = Company::with('country')->first();
 

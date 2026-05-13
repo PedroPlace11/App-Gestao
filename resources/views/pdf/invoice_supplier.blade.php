@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Encomenda - {{ $order->number ?? '' }}</title>
+    <title>Fatura - {{ $invoice->number ?? '' }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1f2937; }
@@ -33,10 +33,6 @@
 
         .thanks { margin-top: 24px; text-align: center; color: #0b72b9; font-size: 30px; font-weight: 300; }
         .footer { margin-top: 12px; text-align: center; color: #2563eb; font-size: 10px; line-height: 1.5; }
-
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 9px; font-weight: bold; }
-        .status-draft { background: #fef3c7; color: #92400e; }
-        .status-closed { background: #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
@@ -53,25 +49,21 @@
             </div>
         </div>
         <div class="right">
-            <div class="headline">ENCOMENDA</div>
+            <div class="headline">FATURA</div>
             <div class="box-title">INFORMAÇÃO DO DOCUMENTO</div>
             <div class="box-body">
-                <div class="info-row"><strong>{{ $order->number ?? '-' }}</strong></div>
-                <div class="info-row">Data: {{ $order->date ? \Carbon\Carbon::parse($order->date)->format('d/m/Y') : '-' }}</div>
-                <div class="info-row">
-                    <span class="status-badge {{ $order->status === 'draft' ? 'status-draft' : 'status-closed' }}">
-                        {{ $order->status === 'draft' ? 'Rascunho' : 'Fechada' }}
-                    </span>
-                </div>
+                <div class="info-row"><strong>{{ $invoice->number ?? '-' }}</strong></div>
+                <div class="info-row">Data: {{ $invoice->issue_date ? \Carbon\Carbon::parse($invoice->issue_date)->format('d/m/Y') : '-' }}</div>
+                <div class="info-row">Status: {{ $invoice->status ?? '-' }}</div>
             </div>
         </div>
     </div>
 
     <div class="top">
         <div class="left">
-            <div class="box-title">CLIENTE</div>
+            <div class="box-title">CLIENTE/ENTIDADE</div>
             <div class="box-body">
-                <div class="info-row"><strong>{{ $order->entity?->name ?? '-' }}</strong></div>
+                <div class="info-row"><strong>{{ $invoice->supplier->name ?? '-' }}</strong></div>
             </div>
         </div>
     </div>
@@ -86,18 +78,14 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($items ?? [] as $item)
+            @foreach($items as $item)
             <tr>
-                <td>{{ $item['name'] ?? 'Artigo' }}</td>
+                <td>{{ $item['name'] ?? 'Serviço de Exemplo' }}</td>
                 <td class="right-text">{{ number_format($item['quantity'] ?? 1, 2, ',', '.') }}</td>
                 <td class="right-text">{{ number_format($item['unit_price'] ?? 0, 2, ',', '.') }} €</td>
                 <td class="right-text">{{ number_format($item['total'] ?? 0, 2, ',', '.') }} €</td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="4" style="text-align: center; padding: 20px; color: #999;">Sem artigos</td>
-            </tr>
-            @endforelse
+            @endforeach
         </tbody>
     </table>
 
@@ -112,7 +100,7 @@
         </tr>
         <tr>
             <td class="label grand">TOTAL:</td>
-            <td class="right-text grand">{{ number_format($order->total_value ?? 0, 2, ',', '.') }} €</td>
+            <td class="right-text grand">{{ number_format($invoice->total_value ?? 0, 2, ',', '.') }} €</td>
         </tr>
     </table>
 

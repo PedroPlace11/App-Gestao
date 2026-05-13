@@ -49,6 +49,15 @@ const {
 
 const hasRows = computed(() => paginatedRows.value.length > 0);
 
+const modalOpen = computed({
+    get: () => entityStore.isModalOpen,
+    set: (value: boolean) => {
+        if (!value) {
+            entityStore.closeModal();
+        }
+    },
+});
+
 const fetchEntities = async () => {
     isLoading.value = true;
     try {
@@ -110,12 +119,6 @@ const handleFormSubmitted = (savedEntity: Entity) => {
     entityStore.closeModal();
 
     console.log('Modal closed after submission');
-};
-
-const handleDialogOpenChange = (value: boolean) => {
-    if (!value) {
-        entityStore.closeModal();
-    }
 };
 
 onMounted(fetchEntities);
@@ -243,7 +246,7 @@ onMounted(fetchEntities);
         </Card>
     </div>
 
-    <Dialog :open="entityStore.isModalOpen" @update:open="handleDialogOpenChange">
+    <Dialog v-model:open="modalOpen">
         <DialogContent class="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden">
             <DialogHeader class="flex-shrink-0">
                 <DialogTitle>{{ entityStore.selectedEntity ? 'Editar Entidade' : 'Nova Entidade' }}</DialogTitle>
