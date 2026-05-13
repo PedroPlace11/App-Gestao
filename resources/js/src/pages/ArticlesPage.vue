@@ -22,6 +22,15 @@ const { get, remove } = useApi();
 const { toast } = useToast();
 const articleStore = useArticleStore();
 
+const exampleArticles: Article[] = [
+  { id: 1, reference: 'ART-001', name: 'Notebook Dell Inspiron', price: 599.99, active: true },
+  { id: 2, reference: 'ART-002', name: 'Mouse Logitech MX Master', price: 99.99, active: true },
+  { id: 3, reference: 'ART-003', name: 'Teclado Mecânico RGB', price: 149.99, active: true },
+  { id: 4, reference: 'ART-004', name: 'Monitor Samsung 27" 4K', price: 299.99, active: true },
+  { id: 5, reference: 'ART-005', name: 'Webcam Logitech C920', price: 79.99, active: true },
+  { id: 6, reference: 'ART-006', name: 'Headphone Bose QC35', price: 349.99, active: false },
+];
+
 const articles = ref<Article[]>([]);
 const isLoading = ref(false);
 
@@ -41,9 +50,10 @@ const fetchArticles = async () => {
   isLoading.value = true;
   try {
     const response = await get<PaginatedResponse<Article>>('/articles', { per_page: 1000 });
-    articles.value = response.data ?? [];
+    articles.value = response.data && response.data.length > 0 ? response.data : exampleArticles;
   } catch {
-    toast({ title: 'Erro ao carregar artigos', description: 'Nao foi possivel obter os dados.', variant: 'destructive' });
+    articles.value = exampleArticles;
+    toast({ title: 'Erro ao carregar artigos', description: 'Usando dados de exemplo.', variant: 'destructive' });
   } finally {
     isLoading.value = false;
   }

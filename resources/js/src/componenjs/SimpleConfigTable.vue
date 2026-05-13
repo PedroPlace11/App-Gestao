@@ -20,6 +20,7 @@ const props = defineProps<{
   title: string;
   endpoint: string;
   columns: { key: string; label: string }[];
+  exampleItems?: any[];
 }>();
 
 const { get, remove } = useApi();
@@ -46,7 +47,15 @@ const fetchItems = async () => {
   try {
     const response = await get<PaginatedResponse<any>>(`/v1${props.endpoint}`, { per_page: 1000 });
     items.value = response.data ?? [];
+
+    if (!items.value.length && Array.isArray(props.exampleItems) && props.exampleItems.length) {
+      items.value = props.exampleItems;
+    }
   } catch {
+    if (Array.isArray(props.exampleItems) && props.exampleItems.length) {
+      items.value = props.exampleItems;
+    }
+
     toast({
       title: 'Erro ao carregar',
       description: 'Não foi possível obter os dados.',

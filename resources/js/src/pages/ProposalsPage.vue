@@ -24,11 +24,70 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+interface Entity {
+  id: number;
+  name: string;
+}
+
+interface Proposal {
+  id: number;
+  number: string;
+  date: string;
+  client_id: number | null;
+  validity: string;
+  total_value: number | string;
+  status: 'draft' | 'closed';
+  entity?: Entity | null;
+}
+
+interface PaginatedResponse<T> {
+  data?: T[];
+}
+
 const { get, post, put } = useApi();
 const { toast } = useToast();
 
-const proposals = ref<Proposal[]>([]);
-const entities = ref<Entity[]>([]);
+const exampleEntities: Entity[] = [
+  { id: 1, name: 'Cliente Exemplo, Lda.' },
+  { id: 2, name: 'Inovcorp Group' },
+  { id: 3, name: 'Serviços Atlântico, Lda.' },
+];
+
+const exampleProposals: Proposal[] = [
+  {
+    id: 1,
+    number: 'PROP-2026-001',
+    date: '2026-05-08',
+    client_id: 1,
+    validity: '2026-06-08',
+    total_value: 1450,
+    status: 'draft',
+    entity: exampleEntities[0],
+  },
+  {
+    id: 2,
+    number: 'PROP-2026-002',
+    date: '2026-05-09',
+    client_id: 2,
+    validity: '2026-06-09',
+    total_value: 2890.5,
+    status: 'closed',
+    entity: exampleEntities[1],
+  },
+  {
+    id: 3,
+    number: 'PROP-2026-003',
+    date: '2026-05-12',
+    client_id: 3,
+    validity: '2026-06-12',
+    total_value: 760,
+    status: 'draft',
+    entity: exampleEntities[2],
+  },
+];
+
+const proposals = ref<Proposal[]>(exampleProposals);
+const entities = ref<Entity[]>(exampleEntities);
 const isLoading = ref(false);
 const isFormOpen = ref(false);
 const isDetailOpen = ref(false);
@@ -69,9 +128,15 @@ const fetchData = async () => {
       get<PaginatedResponse<Proposal>>('/proposals', { per_page: 1000 }),
       get<PaginatedResponse<Entity>>('/entities', { per_page: 1000, type: 'client' }),
     ]);
-    proposals.value = prResponse.data ?? [];
-    entities.value = enResponse.data ?? [];
+
+    proposals.value = (prResponse.data?.length ? prResponse.data : exampleProposals).map((proposal) => ({
+      ...proposal,
+      entity: proposal.entity ?? exampleEntities.find((entity) => entity.id === proposal.client_id) ?? null,
+    }));
+    entities.value = enResponse.data?.length ? enResponse.data : exampleEntities;
   } catch {
+    proposals.value = exampleProposals;
+    entities.value = exampleEntities;
     toast({ title: 'Erro ao carregar propostas', variant: 'destructive' });
   } finally {
     isLoading.value = false;

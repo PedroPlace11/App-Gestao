@@ -11,6 +11,56 @@ use Illuminate\Validation\Rule;
 
 class EntityController extends Controller
 {
+    private function normalizeCountryValue(string $value): string
+    {
+        $normalized = Str::of($value)
+            ->ascii()
+            ->lower()
+            ->trim()
+            ->replaceMatches('/\s+/', ' ');
+
+        return (string) $normalized;
+    }
+
+    private function resolveCountryId(Request $request): void
+    {
+        if ($request->filled('country_id')) {
+            $request->merge(['country_id' => (int) $request->input('country_id')]);
+            return;
+        }
+
+        if (!$request->filled('country_name')) {
+            return;
+        }
+
+        $countryNameInput = trim((string) $request->input('country_name'));
+        $countryInput = $this->normalizeCountryValue($countryNameInput);
+        $countryCodeInput = strtoupper(trim((string) $request->input('country_code', '')));
+
+        $country = Country::query()->get(['id', 'name', 'code'])->first(function (Country $country) use ($countryInput) {
+            return $this->normalizeCountryValue((string) $country->name) === $countryInput
+                || $this->normalizeCountryValue((string) $country->code) === $countryInput;
+        });
+
+        if ($country) {
+            $request->merge(['country_id' => $country->id]);
+            return;
+        }
+
+        // Fallback: cria o país automaticamente quando vem da API externa e ainda não existe na tabela local.
+        if ($countryCodeInput !== '' && strlen($countryCodeInput) === 2) {
+            $createdCountry = Country::firstOrCreate(
+                ['code' => $countryCodeInput],
+                [
+                    'name' => $countryNameInput,
+                    'active' => true,
+                ]
+            );
+
+            $request->merge(['country_id' => $createdCountry->id]);
+        }
+    }
+
     public function index(Request $request)
     {
         $query = Entity::query();
@@ -50,24 +100,7 @@ class EntityController extends Controller
 
     public function store(Request $request)
     {
-        if (!$request->filled('country_id') && $request->filled('country_name')) {
-            $countryInput = mb_strtolower(trim((string) $request->input('country_name')));
-
-            $country = Country::query()
-                ->where(function ($query) use ($countryInput) {
-                    $query->whereRaw('LOWER(name) = ?', [$countryInput])
-                        ->orWhereRaw('LOWER(code) = ?', [$countryInput]);
-                })
-                ->first();
-
-            if ($country) {
-                $request->merge(['country_id' => $country->id]);
-            }
-        }
-
-        if ($request->filled('country_id')) {
-            $request->merge(['country_id' => (int) $request->input('country_id')]);
-        }
+        $this->resolveCountryId($request);
 
         $data = $request->validate([
             'type'         => ['required', Rule::in(['client', 'supplier', 'both'])],
@@ -109,24 +142,7 @@ class EntityController extends Controller
     {
         $entity = Entity::findOrFail($id);
 
-        if (!$request->filled('country_id') && $request->filled('country_name')) {
-            $countryInput = mb_strtolower(trim((string) $request->input('country_name')));
-
-            $country = Country::query()
-                ->where(function ($query) use ($countryInput) {
-                    $query->whereRaw('LOWER(name) = ?', [$countryInput])
-                        ->orWhereRaw('LOWER(code) = ?', [$countryInput]);
-                })
-                ->first();
-
-            if ($country) {
-                $request->merge(['country_id' => $country->id]);
-            }
-        }
-
-        if ($request->filled('country_id')) {
-            $request->merge(['country_id' => (int) $request->input('country_id')]);
-        }
+        $this->resolveCountryId($request);
 
         $data = $request->validate([
             'type'         => ['sometimes', Rule::in(['client', 'supplier', 'both'])],

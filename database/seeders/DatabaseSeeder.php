@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -24,15 +23,7 @@ class DatabaseSeeder extends Seeder
             CalendarActionSeeder::class,
             PermissionSeeder::class,
             \Database\Seeders\EntitySeeder::class,
+            UserSeeder::class,
         ]);
-
-        // Default admin user
-        User::firstOrCreate(
-            ['email' => 'admin@inovcorp.pt'],
-            [
-                'name'     => 'Administrador',
-                'password' => bcrypt('password'),
-            ]
-        );
     }
 }

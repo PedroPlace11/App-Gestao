@@ -27,8 +27,53 @@ import {
 const { get, post, put } = useApi();
 const { toast } = useToast();
 
-const invoices = ref<Invoice[]>([]);
-const suppliers = ref<Entity[]>([]);
+const exampleSuppliers = [
+  { id: 1, name: 'Fornecedor Exemplo, Lda.' },
+  { id: 2, name: 'Suprimentos Atlântico, S.A.' },
+  { id: 3, name: 'Material Office, Lda.' },
+];
+
+const exampleInvoices = [
+  {
+    id: 1,
+    is_example: true,
+    number: 'FF-2026-001',
+    issue_date: '2026-05-05',
+    due_date: '2026-06-05',
+    supplier_id: 1,
+    supplier_order_id: 1,
+    total_value: 1280.75,
+    status: 'pending',
+    entity: exampleSuppliers[0],
+  },
+  {
+    id: 2,
+    is_example: true,
+    number: 'FF-2026-002',
+    issue_date: '2026-05-09',
+    due_date: '2026-06-09',
+    supplier_id: 2,
+    supplier_order_id: 2,
+    total_value: 540.0,
+    status: 'paid',
+    entity: exampleSuppliers[1],
+  },
+  {
+    id: 3,
+    is_example: true,
+    number: 'FF-2026-003',
+    issue_date: '2026-05-12',
+    due_date: '2026-06-12',
+    supplier_id: 3,
+    supplier_order_id: 3,
+    total_value: 219.9,
+    status: 'pending',
+    entity: exampleSuppliers[2],
+  },
+];
+
+const invoices = ref<Invoice[]>(exampleInvoices as Invoice[]);
+const suppliers = ref<Entity[]>(exampleSuppliers as Entity[]);
 const isLoading = ref(false);
 const isFormOpen = ref(false);
 const isDetailOpen = ref(false);
@@ -69,9 +114,17 @@ const fetchData = async () => {
       get<PaginatedResponse<Invoice>>('/invoices', { per_page: 1000 }),
       get<PaginatedResponse<Entity>>('/entities', { per_page: 1000, type: 'supplier' }),
     ]);
-    invoices.value = invResponse.data ?? [];
-    suppliers.value = supResponse.data ?? [];
+
+    invoices.value = (invResponse.data?.length ? invResponse.data : exampleInvoices) as Invoice[];
+    suppliers.value = (supResponse.data?.length ? supResponse.data : exampleSuppliers) as Entity[];
+
+    invoices.value = invoices.value.map((invoice) => ({
+      ...invoice,
+      entity: invoice.entity ?? suppliers.value.find((supplier) => supplier.id === invoice.supplier_id) ?? null,
+    }));
   } catch {
+    invoices.value = exampleInvoices as Invoice[];
+    suppliers.value = exampleSuppliers as Entity[];
     toast({ title: 'Erro ao carregar faturas', variant: 'destructive' });
   } finally {
     isLoading.value = false;
@@ -127,8 +180,36 @@ const submitForm = async () => {
   }
 };
 
-const downloadPdf = () =>
-  toast({ title: 'PDF', description: 'Funcionalidade em desenvolvimento.' });
+const downloadPdf = (invoice?: Invoice | null) => {
+  if (!invoice) {
+    toast({ title: 'PDF', description: 'Selecione uma fatura primeiro.', variant: 'destructive' });
+    return;
+  }
+
+  if ((invoice as any).is_example) {
+    const query = new URLSearchParams({
+      number: String(invoice.number ?? 'FAT-EXEMPLO'),
+      issue_date: String(invoice.issue_date ?? new Date().toISOString().slice(0, 10)),
+      due_date: String(invoice.due_date ?? new Date().toISOString().slice(0, 10)),
+      supplier_id: String(invoice.supplier_id ?? ''),
+      supplier_name: String(invoice.entity?.name ?? 'Fornecedor'),
+      supplier_nif: String((invoice as any).entity?.nif ?? ''),
+      supplier_address: String((invoice as any).entity?.address ?? ''),
+      supplier_postal_code: String((invoice as any).entity?.postal_code ?? ''),
+      supplier_city: String((invoice as any).entity?.city ?? ''),
+      supplier_email: String((invoice as any).entity?.email ?? ''),
+      total_value: String(Number(invoice.total_value ?? 0)),
+      status: String(invoice.status ?? 'pending'),
+      item_name: 'Fornecimento geral',
+      item_description: 'Fatura de exemplo gerada com template visual.',
+    });
+
+    window.open(`/api/v1/invoices-template-pdf?${query.toString()}`, '_blank');
+    return;
+  }
+
+  window.open(`/api/v1/invoices/${invoice.id}/download-pdf`, '_blank');
+};
 
 onMounted(fetchData);
 </script>
@@ -180,7 +261,7 @@ onMounted(fetchData);
                 <div class="flex justify-end gap-1 flex-wrap">
                   <Button variant="outline" size="sm" @click="openDetail(invoice)">Visualizar</Button>
                   <Button variant="outline" size="sm" @click="openEdit(invoice)">Editar</Button>
-                  <Button variant="outline" size="sm" @click="downloadPdf">PDF</Button>
+                  <Button variant="outline" size="sm" @click="downloadPdf(invoice)">PDF</Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -268,7 +349,7 @@ onMounted(fetchData);
         </div>
         <div class="flex justify-end gap-2 mt-4">
           <Button variant="outline" @click="isDetailOpen = false">Fechar</Button>
-          <Button variant="outline" @click="downloadPdf">Download PDF</Button>
+          <Button variant="outline" @click="downloadPdf(selectedInvoice)">Download PDF</Button>
         </div>
       </DialogContent>
     </Dialog>

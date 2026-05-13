@@ -27,8 +27,44 @@ import {
 const { get, post, put } = useApi();
 const { toast } = useToast();
 
-const orders = ref<Order[]>([]);
-const entities = ref<Entity[]>([]);
+const exampleEntities = [
+  { id: 1, name: 'Cliente Exemplo, Lda.' },
+  { id: 2, name: 'Inovcorp Group' },
+  { id: 3, name: 'Serviços Atlântico, Lda.' },
+];
+
+const exampleOrders = [
+  {
+    id: 1,
+    number: 'ENC-2026-001',
+    date: '2026-05-07',
+    client_id: 1,
+    status: 'draft',
+    total_value: 845.5,
+    entity: exampleEntities[0],
+  },
+  {
+    id: 2,
+    number: 'ENC-2026-002',
+    date: '2026-05-09',
+    client_id: 2,
+    status: 'closed',
+    total_value: 1520,
+    entity: exampleEntities[1],
+  },
+  {
+    id: 3,
+    number: 'ENC-2026-003',
+    date: '2026-05-12',
+    client_id: 3,
+    status: 'draft',
+    total_value: 299.9,
+    entity: exampleEntities[2],
+  },
+];
+
+const orders = ref<Order[]>(exampleOrders as Order[]);
+const entities = ref<Entity[]>(exampleEntities as Entity[]);
 const isLoading = ref(false);
 const isFormOpen = ref(false);
 const isDetailOpen = ref(false);
@@ -67,9 +103,17 @@ const fetchData = async () => {
       get<PaginatedResponse<Order>>('/orders', { per_page: 1000 }),
       get<PaginatedResponse<Entity>>('/entities', { per_page: 1000, type: 'client' }),
     ]);
-    orders.value = orResponse.data ?? [];
-    entities.value = enResponse.data ?? [];
+
+    orders.value = (orResponse.data?.length ? orResponse.data : exampleOrders) as Order[];
+    entities.value = (enResponse.data?.length ? enResponse.data : exampleEntities) as Entity[];
+
+    orders.value = orders.value.map((order) => ({
+      ...order,
+      entity: order.entity ?? entities.value.find((entity) => entity.id === order.client_id) ?? null,
+    }));
   } catch {
+    orders.value = exampleOrders as Order[];
+    entities.value = exampleEntities as Entity[];
     toast({ title: 'Erro ao carregar encomendas', variant: 'destructive' });
   } finally {
     isLoading.value = false;
@@ -120,8 +164,17 @@ const submitForm = async () => {
   }
 };
 
-const downloadPdf = () =>
-  toast({ title: 'PDF', description: 'Funcionalidade em desenvolvimento.' });
+const downloadPdf = (order: Order) => {
+  const params = new URLSearchParams({
+    number: order.number,
+    date: order.date,
+    client_name: order.entity?.name ?? 'Cliente Exemplo',
+    status: order.status,
+    total_value: String(order.total_value),
+  });
+
+  window.open(`/api/v1/orders-template-pdf?${params.toString()}`, '_blank');
+};
 
 onMounted(fetchData);
 </script>
@@ -171,7 +224,7 @@ onMounted(fetchData);
                 <div class="flex justify-end gap-1 flex-wrap">
                   <Button variant="outline" size="sm" @click="openDetail(order)">Visualizar</Button>
                   <Button variant="outline" size="sm" @click="openEdit(order)">Editar</Button>
-                  <Button variant="outline" size="sm" @click="downloadPdf">PDF</Button>
+                  <Button variant="outline" size="sm" @click="downloadPdf(order)">PDF</Button>
                 </div>
               </TableCell>
             </TableRow>

@@ -24,7 +24,7 @@ class Order extends Model
      */
     public function entity()
     {
-        return $this->belongsTo(Entity::class);
+        return $this->belongsTo(Entity::class, 'client_id');
     }
 
     public function user()

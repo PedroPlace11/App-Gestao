@@ -5,6 +5,7 @@ import { usePaginatedTable } from '../composables/usePaginatedTable';
 import { useToast } from '@/components/ui/toast/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -25,9 +26,47 @@ import {
 const { get, remove } = useApi();
 const { toast } = useToast();
 
-const supplierOrders = ref<any[]>([]);
+const exampleSuppliers = [
+  { id: 1, name: 'Fornecedor Exemplo, Lda.' },
+  { id: 2, name: 'Suprimentos Atlântico, S.A.' },
+  { id: 3, name: 'Material Office, Lda.' },
+];
+
+const exampleSupplierOrders = [
+  {
+    id: 1,
+    date: '2026-05-06',
+    number: 'ECF-2026-001',
+    supplier_id: 1,
+    total_value: 1280.75,
+    status: 'draft',
+    supplier: exampleSuppliers[0],
+  },
+  {
+    id: 2,
+    date: '2026-05-09',
+    number: 'ECF-2026-002',
+    supplier_id: 2,
+    total_value: 540.0,
+    status: 'closed',
+    supplier: exampleSuppliers[1],
+  },
+  {
+    id: 3,
+    date: '2026-05-12',
+    number: 'ECF-2026-003',
+    supplier_id: 3,
+    total_value: 219.9,
+    status: 'invoiced',
+    supplier: exampleSuppliers[2],
+  },
+];
+
+const supplierOrders = ref<any[]>(exampleSupplierOrders);
 const isLoading = ref(false);
 const statusFilter = ref('');
+const isDetailOpen = ref(false);
+const selectedOrder = ref<any | null>(null);
 
 const { searchQuery, page, paginatedRows, totalPages, setSearch, setPage } =
   usePaginatedTable<any>(
@@ -44,6 +83,18 @@ const { searchQuery, page, paginatedRows, totalPages, setSearch, setPage } =
 
 const hasRows = computed(() => paginatedRows.value.length > 0);
 
+const openDetail = (order: any) => {
+  selectedOrder.value = order;
+  isDetailOpen.value = true;
+};
+
+const statusLabel = (status: string) => {
+  if (status === 'draft') return 'Rascunho';
+  if (status === 'closed') return 'Fechada';
+  if (status === 'invoiced') return 'Faturada';
+  return status;
+};
+
 const fetchSupplierOrders = async () => {
   isLoading.value = true;
   try {
@@ -51,8 +102,9 @@ const fetchSupplierOrders = async () => {
       per_page: 1000,
       ...(statusFilter.value && { status: statusFilter.value }),
     });
-    supplierOrders.value = response.data ?? [];
+    supplierOrders.value = response.data?.length ? response.data : exampleSupplierOrders;
   } catch {
+    supplierOrders.value = exampleSupplierOrders;
     toast({
       title: 'Erro ao carregar',
       description: 'Não foi possível obter as encomendas de fornecedor.',
@@ -142,7 +194,7 @@ onMounted(fetchSupplierOrders);
                 </span>
               </TableCell>
               <TableCell class="text-right">
-                <Button size="sm" variant="ghost">Ver</Button>
+                <Button size="sm" variant="ghost" @click="openDetail(order)">Ver</Button>
                 <Button size="sm" variant="ghost" class="text-red-600 hover:text-red-700" @click="handleDelete(order)">
                   Eliminar
                 </Button>
@@ -181,4 +233,24 @@ onMounted(fetchSupplierOrders);
       </div>
     </CardContent>
   </Card>
+
+  <Dialog :open="isDetailOpen" @update:open="(open) => { if (!open) isDetailOpen = false; }">
+    <DialogContent class="max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Detalhe da Encomenda</DialogTitle>
+      </DialogHeader>
+
+      <div v-if="selectedOrder" class="grid grid-cols-2 gap-3 text-sm">
+        <div><span class="font-medium">Número:</span> {{ selectedOrder.number }}</div>
+        <div><span class="font-medium">Data:</span> {{ new Date(selectedOrder.date).toLocaleDateString('pt-PT') }}</div>
+        <div><span class="font-medium">Fornecedor:</span> {{ selectedOrder.supplier?.name ?? '-' }}</div>
+        <div><span class="font-medium">Estado:</span> {{ statusLabel(selectedOrder.status) }}</div>
+        <div class="col-span-2"><span class="font-medium">Valor Total:</span> {{ Number(selectedOrder.total_value ?? 0).toFixed(2) }} €</div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <Button variant="outline" @click="isDetailOpen = false">Fechar</Button>
+      </div>
+    </DialogContent>
+  </Dialog>
 </template>

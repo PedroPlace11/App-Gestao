@@ -18,7 +18,7 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = User::query();
+        $query = User::query()->with('roles');
 
         if ($request->filled('search')) {
             $search = $request->string('search')->trim()->lower();
