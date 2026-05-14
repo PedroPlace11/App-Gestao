@@ -12,6 +12,7 @@ const exampleTaxRates = [
   <SimpleConfigTable
     title="Taxas de IVA"
     endpoint="/tax-rates"
+    show-rate-field
     :example-items="exampleTaxRates"
     :columns="[
       { key: 'name', label: 'Nome' },

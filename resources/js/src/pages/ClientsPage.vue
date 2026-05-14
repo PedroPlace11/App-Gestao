@@ -3,5 +3,5 @@ import EntityTable from '../componenjs/EntityTable.vue';
 </script>
 
 <template>
-  <EntityTable filter-type="client" title="Clientes" />
+  <EntityTable filter-type="client" title="Clientes" hide-website />
 </template>

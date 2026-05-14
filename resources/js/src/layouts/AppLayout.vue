@@ -133,10 +133,10 @@ const handleLogout = async () => {
                     <FileText class="nav-icon" /> Propostas
                 </RouterLink>
                 <RouterLink to="/calendario" class="nav-item" active-class="nav-item--active" @click="closeSidebar">
-                    <Calendar class="nav-icon" /> CalendÃ¡rio
+                    <Calendar class="nav-icon" /> Calendário
                 </RouterLink>
 
-                <div class="nav-section-label">OperaÃ§Ãµes</div>
+                <div class="nav-section-label">Operações</div>
 
                 <!-- Encomendas submenu -->
                 <div>
@@ -174,7 +174,7 @@ const handleLogout = async () => {
                     <div v-if="expandedMenus.financeiro" class="nav-submenu">
                         <RouterLink to="/financeiro/contas-bancarias" class="nav-sub-item"
                             active-class="nav-item--active" @click="closeSidebar">
-                            <Landmark class="nav-sub-icon" /> Contas BancÃ¡rias
+                            <Landmark class="nav-sub-icon" /> Contas Bancárias
                         </RouterLink>
                         <RouterLink to="/financeiro/conta-corrente" class="nav-sub-item" active-class="nav-item--active"
                             @click="closeSidebar">
@@ -191,13 +191,13 @@ const handleLogout = async () => {
                     <Archive class="nav-icon" /> Arquivo
                 </RouterLink>
 
-                <div class="nav-section-label">AdministraÃ§Ã£o</div>
+                <div class="nav-section-label">Administração</div>
 
-                <!-- GestÃ£o de Acessos submenu -->
+                <!-- Gestão de Acessos submenu -->
                 <div>
                     <button class="nav-item nav-item--parent" @click="toggleMenu('gestaoAcessos')">
                         <span class="flex items-center gap-2.5">
-                            <Shield class="nav-icon" /> GestÃ£o de Acessos
+                            <Shield class="nav-icon" /> Gestão de Acessos
                         </span>
                         <ChevronDown :class="['nav-chevron', expandedMenus.gestaoAcessos ? 'nav-chevron--open' : '']" />
                     </button>
@@ -208,35 +208,35 @@ const handleLogout = async () => {
                         </RouterLink>
                         <RouterLink to="/gestao-acessos/permissoes" class="nav-sub-item" active-class="nav-item--active"
                             @click="closeSidebar">
-                            <Shield class="nav-sub-icon" /> PermissÃµes
+                            <Shield class="nav-sub-icon" /> Permissões
                         </RouterLink>
                     </div>
                 </div>
 
-                <!-- ConfiguraÃ§Ãµes submenu -->
+                <!-- Configurações submenu -->
                 <div>
                     <button class="nav-item nav-item--parent" @click="toggleMenu('configuracoes')">
                         <span class="flex items-center gap-2.5">
-                            <Settings class="nav-icon" /> ConfiguraÃ§Ãµes
+                            <Settings class="nav-icon" /> Configurações
                         </span>
                         <ChevronDown :class="['nav-chevron', expandedMenus.configuracoes ? 'nav-chevron--open' : '']" />
                     </button>
                     <div v-if="expandedMenus.configuracoes" class="nav-submenu">
                         <RouterLink to="/configuracoes/paises" class="nav-sub-item" active-class="nav-item--active"
                             @click="closeSidebar">
-                            <Globe class="nav-sub-icon" /> PaÃ­ses
+                            <Globe class="nav-sub-icon" /> Países
                         </RouterLink>
                         <RouterLink to="/configuracoes/funcoes" class="nav-sub-item" active-class="nav-item--active"
                             @click="closeSidebar">
-                            <Briefcase class="nav-sub-icon" /> FunÃ§Ãµes
+                            <Briefcase class="nav-sub-icon" /> Funções
                         </RouterLink>
                         <RouterLink to="/configuracoes/tipos-calendario" class="nav-sub-item"
                             active-class="nav-item--active" @click="closeSidebar">
-                            <CalendarDays class="nav-sub-icon" /> Tipos CalendÃ¡rio
+                            <CalendarDays class="nav-sub-icon" /> Tipos Calendário
                         </RouterLink>
                         <RouterLink to="/configuracoes/acoes-calendario" class="nav-sub-item"
                             active-class="nav-item--active" @click="closeSidebar">
-                            <Zap class="nav-sub-icon" /> AÃ§Ãµes CalendÃ¡rio
+                            <Zap class="nav-sub-icon" /> Ações Calendário
                         </RouterLink>
                         <RouterLink to="/configuracoes/artigos" class="nav-sub-item" active-class="nav-item--active"
                             @click="closeSidebar">
@@ -268,7 +268,7 @@ const handleLogout = async () => {
                         <span class="user-role">Administrador</span>
                     </div>
                 </button>
-                <button class="logout-btn" @click="handleLogout" title="Terminar SessÃ£o">
+                <button class="logout-btn" @click="handleLogout" title="Terminar Sessão">
                     <LogOut class="h-4 w-4" />
                 </button>
             </div>
@@ -286,7 +286,7 @@ const handleLogout = async () => {
 </template>
 
 <style scoped>
-/* â”€â”€ Layout shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Layout shell */
 .app-shell {
     display: flex;
     height: 100vh;
@@ -294,7 +294,7 @@ const handleLogout = async () => {
     background: #e8edf5;
 }
 
-/* â”€â”€ Sidebar overlay (mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Sidebar overlay (mobile) */
 .sidebar-overlay {
     position: fixed;
     inset: 0;
@@ -303,7 +303,7 @@ const handleLogout = async () => {
     backdrop-filter: blur(2px);
 }
 
-/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Sidebar */
 .sidebar {
     position: fixed;
     inset-y: 0;
@@ -584,7 +584,7 @@ const handleLogout = async () => {
     color: #f87171;
 }
 
-/* â”€â”€ Topbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Topbar */
 .main-wrapper {
     display: flex;
     flex: 1;
@@ -651,7 +651,7 @@ const handleLogout = async () => {
     color: #374151;
 }
 
-/* â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Main content */
 .main-content {
     flex: 1;
     overflow-y: auto;
@@ -665,7 +665,7 @@ const handleLogout = async () => {
     }
 }
 
-/* â”€â”€ Dark mode overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Dark mode overrides */
 :global(.dark) .app-shell {
     background: #0f172a;
 }

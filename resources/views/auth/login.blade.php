@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Entrar — {{ config('app.name') }}</title>
+    <title>Login-Inovcorp</title>
+    <link rel="icon" type="image/png" href="{{ asset('image/logo/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         * {
@@ -91,20 +92,22 @@
         }
 
         .brand-chip {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 8px;
-            width: fit-content;
-            padding: 7px 12px;
-            border-radius: 999px;
-            border: 1px solid rgba(190, 211, 255, 0.32);
-            color: #dfeaff;
-            font-weight: 700;
-            letter-spacing: .04em;
-            font-size: .73rem;
-            text-transform: uppercase;
+            justify-content: center;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
             margin-bottom: 24px;
-            background: rgba(186, 207, 255, 0.08);
+            background: transparent;
+        }
+
+        .brand-icon {
+            display: block;
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
         }
 
         .brand-panel h1 {
@@ -393,7 +396,9 @@
     <a href="{{ url('/') }}" class="close-home" aria-label="Fechar e voltar ao inicio" title="Voltar ao inicio">&times;</a>
 
     <aside class="brand-panel">
-        <div class="brand-chip">Gestao Inteligente</div>
+        <div class="brand-chip" aria-label="Inovcorp">
+            <img class="brand-icon" src="{{ asset('image/logo/logo.png') }}" alt="Inovcorp">
+        </div>
         <h1>Bem-vindo de volta</h1>
         <p>
             Aceda ao seu painel para gerir clientes, propostas, encomendas,

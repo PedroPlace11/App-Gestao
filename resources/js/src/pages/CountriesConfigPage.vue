@@ -16,6 +16,7 @@ const exampleCountries = [
   <SimpleConfigTable
     title="Países"
     endpoint="/countries"
+    show-code-field
     :example-items="exampleCountries"
     :columns="[
       { key: 'name', label: 'Nome' },

@@ -21,6 +21,8 @@ const props = defineProps<{
   endpoint: string;
   columns: { key: string; label: string }[];
   exampleItems?: any[];
+  showCodeField?: boolean;
+  showRateField?: boolean;
 }>();
 
 const { get, remove } = useApi();
@@ -175,6 +177,8 @@ onMounted(fetchItems);
       <SimpleConfigForm
         :item="selectedItem"
         :endpoint="endpoint"
+        :show-code-field="showCodeField"
+        :show-rate-field="showRateField"
         @submitted="handleFormSubmitted"
         @cancelled="isFormOpen = false"
       />

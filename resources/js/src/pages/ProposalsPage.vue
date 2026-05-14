@@ -188,12 +188,74 @@ const submitForm = async () => {
   }
 };
 
-const downloadPdf = () => {
-  toast({ title: 'PDF', description: 'Funcionalidade em desenvolvimento.' });
+const isDownloadingPdf = ref(false);
+
+const downloadPdf = async (proposal: Proposal) => {
+  if (!proposal?.id) {
+    toast({ title: 'Erro', description: 'Proposta inválida.', variant: 'destructive' });
+    return;
+  }
+
+  isDownloadingPdf.value = true;
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+    const response = await fetch(`/api/v1/proposals/${proposal.id}/download-pdf`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/pdf',
+        'X-CSRF-TOKEN': csrfToken,
+      },
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proposta-${proposal.number}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch {
+    toast({ title: 'Erro ao gerar PDF', description: 'Não foi possível descarregar o PDF.', variant: 'destructive' });
+  } finally {
+    isDownloadingPdf.value = false;
+  }
 };
 
-const convertToOrder = () => {
-  toast({ title: 'Converter para Encomenda', description: 'Funcionalidade em desenvolvimento.' });
+const convertToOrder = async (proposal: Proposal) => {
+  if (!proposal) {
+    toast({ title: 'Erro', description: 'Selecione uma proposta primeiro.', variant: 'destructive' });
+    return;
+  }
+
+  const orderNumber = window.prompt('Número da encomenda:', `ENC-${new Date().getFullYear()}-001`);
+  if (!orderNumber) return;
+
+  try {
+    const result = await post(`/proposals/${proposal.id}/convert-to-order`, {
+      order_number: orderNumber,
+      date: new Date().toISOString().slice(0, 10),
+    });
+
+    // Remove da lista após conversão
+    proposals.value = proposals.value.filter(p => p.id !== proposal.id);
+
+    toast({
+      title: 'Proposta convertida',
+      description: `Encomenda ${orderNumber} criada com sucesso.`,
+    });
+  } catch (error: any) {
+    toast({
+      title: 'Erro ao converter',
+      description: error?.message ?? 'Não foi possível converter a proposta.',
+      variant: 'destructive',
+    });
+  }
 };
 
 onMounted(fetchData);
@@ -246,8 +308,10 @@ onMounted(fetchData);
                 <div class="flex justify-end gap-1 flex-wrap">
                   <Button variant="outline" size="sm" @click="openDetail(proposal)">Visualizar</Button>
                   <Button variant="outline" size="sm" @click="openEdit(proposal)">Editar</Button>
-                  <Button variant="outline" size="sm" @click="downloadPdf">PDF</Button>
-                  <Button variant="secondary" size="sm" @click="convertToOrder">Converter</Button>
+                  <Button variant="outline" size="sm" :disabled="isDownloadingPdf" @click="downloadPdf(proposal)">
+                    {{ isDownloadingPdf ? '...' : 'PDF' }}
+                  </Button>
+                  <Button variant="secondary" size="sm" @click="convertToOrder(proposal)">Converter</Button>
                 </div>
               </TableCell>
             </TableRow>

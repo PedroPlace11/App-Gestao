@@ -86,6 +86,7 @@ interface EntityFormValues {
 
 const props = defineProps<{
     entity?: Entity | null;
+    forcedType?: EntityType;
 }>();
 
 const emit = defineEmits<{
@@ -261,7 +262,8 @@ const validateVies = async () => {
     }
 
     const countryCode = countries.value.find((c) => c.id === form.country_id)?.code ?? 'PT';
-    const fullNif = `${countryCode}${form.nif.replace(/\s+/g, '')}`;
+    const nifDigits = form.nif.replace(/\D/g, '');
+    const fullNif = `${countryCode}${nifDigits}`;
 
     const result = await viesValidate(fullNif);
 
@@ -294,26 +296,53 @@ const validateVies = async () => {
     }
 };
 
-const form = reactive<EntityFormValues>({
-    type: 'client',
-    nif: '',
-    name: '',
-    address: '',
-    postal_code: '',
-    city: '',
-    country_id: null,
-    phone: '',
-    mobile: '',
-    website: '',
-    email: '',
-    rgpd_consent: false,
-    observations: '',
-    state: 'active',
-});
+function createEmptyForm() {
+    return {
+        type: 'client',
+        nif: '',
+        name: '',
+        address: '',
+        postal_code: '',
+        city: '',
+        country_id: null,
+        phone: '',
+        mobile: '',
+        website: '',
+        email: '',
+        rgpd_consent: false,
+        observations: '',
+        state: 'active',
+    };
+}
+
+const form = reactive(createEmptyForm());
 
 const formErrors = reactive<Record<string, string>>({});
 
 const isEditing = computed(() => Boolean(props.entity?.id));
+const currentType = computed<EntityType>(() => props.forcedType ?? form.type);
+const isClientType = computed(() => currentType.value === 'client');
+const isSupplierType = computed(() => currentType.value === 'supplier');
+
+const nameLabel = computed(() => {
+    if (isClientType.value) return 'Nome completo';
+    if (isSupplierType.value) return 'Nome da empresa';
+    return 'Nome';
+});
+
+const namePlaceholder = computed(() => {
+    if (isClientType.value) return 'Ex: João Silva';
+    if (isSupplierType.value) return 'Ex: Atlântico Serviços, Lda.';
+    return 'Nome da entidade';
+});
+
+const submitCreateLabel = computed(() => {
+    if (isClientType.value) return 'Criar pessoa';
+    if (isSupplierType.value) return 'Criar empresa';
+    return 'Criar entidade';
+});
+
+const showWebsiteField = computed(() => !isClientType.value);
 
 const resetErrors = () => {
     Object.keys(formErrors).forEach((key) => {
@@ -322,8 +351,8 @@ const resetErrors = () => {
 };
 
 const mapFromEntity = (entity?: Entity | null) => {
-    form.type = entity?.type ?? 'client';
-    form.nif = entity?.nif ?? '';
+    form.type = props.forcedType ?? entity?.type ?? 'client';
+    form.nif = (entity?.nif ?? '').replace(/^PT/i, '');
     form.name = entity?.name ?? '';
     form.address = entity?.address ?? '';
     form.postal_code = entity?.postal_code ?? '';
@@ -331,7 +360,7 @@ const mapFromEntity = (entity?: Entity | null) => {
     form.country_id = entity?.country_id ?? null;
     form.phone = entity?.phone ?? '';
     form.mobile = entity?.mobile ?? '';
-    form.website = entity?.website ?? '';
+    form.website = (props.forcedType ?? entity?.type) === 'client' ? '' : (entity?.website ?? '');
     form.email = entity?.email ?? '';
     form.rgpd_consent = Boolean(entity?.rgpd_consent);
     form.observations = entity?.observations ?? '';
@@ -340,6 +369,10 @@ const mapFromEntity = (entity?: Entity | null) => {
 
 const validate = async (): Promise<boolean> => {
     resetErrors();
+
+    if (props.forcedType) {
+        form.type = props.forcedType;
+    }
 
     console.log('[EntityForm] Starting validation with form values:', {
         type: form.type,
@@ -358,7 +391,7 @@ const validate = async (): Promise<boolean> => {
     const normalizedNif = form.nif.replace(/\D/g, '');
     form.nif = normalizedNif;
 
-    if (!form.type) formErrors.type = 'Selecione o tipo de entidade.';
+    if (!props.forcedType && !form.type) formErrors.type = 'Selecione o tipo de entidade.';
     if (!nifRegex.test(normalizedNif)) formErrors.nif = 'NIF invalido. Use 9 digitos.';
     if (!form.name.trim()) formErrors.name = 'Nome e obrigatorio.';
     if (!form.address.trim()) formErrors.address = 'Morada e obrigatoria.';
@@ -368,18 +401,22 @@ const validate = async (): Promise<boolean> => {
     if (!matchedCountry && !countrySearch.value.trim()) formErrors.country_id = 'Selecione um pais da lista.';
     if (!matchedCountry && countrySearch.value.trim()) formErrors.country_id = 'Selecione um pais valido da lista.';
 
-    const websiteValue = form.website.trim();
-    if (websiteValue === 'https://' || websiteValue === 'http://') {
-        form.website = '';
-    } else if (websiteValue) {
-        try {
-            const parsedUrl = new URL(websiteValue);
-            if (!parsedUrl.hostname) {
+    if (showWebsiteField.value) {
+        const websiteValue = form.website.trim();
+        if (websiteValue === 'https://' || websiteValue === 'http://') {
+            form.website = '';
+        } else if (websiteValue) {
+            try {
+                const parsedUrl = new URL(websiteValue);
+                if (!parsedUrl.hostname) {
+                    formErrors.website = 'Website invalido. Use formato completo, ex: https://exemplo.com';
+                }
+            } catch {
                 formErrors.website = 'Website invalido. Use formato completo, ex: https://exemplo.com';
             }
-        } catch {
-            formErrors.website = 'Website invalido. Use formato completo, ex: https://exemplo.com';
         }
+    } else {
+        form.website = '';
     }
 
     const emailValue = form.email.trim();
@@ -492,6 +529,10 @@ const submit = async () => {
         return;
     }
 
+    if (props.forcedType) {
+        form.type = props.forcedType;
+    }
+
     console.log('[SUBMIT] Starting validation');
     if (!(await validate())) {
         console.log('[SUBMIT] Validation failed, stopping');
@@ -505,7 +546,7 @@ const submit = async () => {
 
     const payload = {
         type: form.type,
-        nif: form.nif,
+        nif: `PT${form.nif}`,
         name: form.name,
         address: form.address,
         postal_code: form.postal_code,
@@ -606,13 +647,43 @@ const submit = async () => {
     }
 };
 
+
 watch(
     () => props.entity,
     (entity) => {
-        mapFromEntity(entity);
+        if (entity) {
+            mapFromEntity(entity);
+        }
         resetErrors();
     },
     { immediate: true },
+);
+
+watch(
+    () => props.forcedType,
+    (forcedType) => {
+        if (!forcedType) return;
+        form.type = forcedType;
+        if (forcedType === 'client') {
+            form.website = '';
+        }
+    },
+    { immediate: true },
+);
+
+
+watch(
+    () => entityStore.isModalOpen,
+    (isOpen) => {
+        if (isOpen && !props.entity) {
+            Object.assign(form, createEmptyForm());
+            resetErrors();
+            return;
+        }
+        if (!isOpen) {
+            resetErrors();
+        }
+    },
 );
 
 onMounted(fetchCountries);
@@ -634,7 +705,7 @@ onMounted(fetchCountries);
 
                     <div class="field-wrap">
                         <Label for="entity-type">Tipo <span class="field-required">*</span></Label>
-                        <Select id="entity-type" v-model="form.type">
+                        <Select v-if="!props.forcedType" id="entity-type" v-model="form.type">
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione o tipo" />
                             </SelectTrigger>
@@ -644,14 +715,19 @@ onMounted(fetchCountries);
                                 <SelectItem value="both">Ambos</SelectItem>
                             </SelectContent>
                         </Select>
+                        <Input v-else id="entity-type" :model-value="isClientType ? 'Cliente' : isSupplierType ? 'Fornecedor' : 'Entidade'" disabled />
                         <p v-if="formErrors.type" class="field-error">{{ formErrors.type }}</p>
                     </div>
 
                     <div class="field-wrap">
-                        <Label for="entity-nif">NIF <span class="field-required">*</span></Label>
+                        <Label for="entity-nif">NIF (PT) <span class="field-required">*</span></Label>
                         <div class="flex gap-2">
-                            <Input id="entity-nif" v-model="form.nif" maxlength="20" placeholder="123456789"
-                                class="flex-1" />
+                            <div class="flex flex-1">
+                                <span
+                                    class="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">PT</span>
+                                <Input id="entity-nif" v-model="form.nif" maxlength="9" inputmode="numeric"
+                                    pattern="[0-9]*" placeholder="123456789" class="flex-1 rounded-l-none" />
+                            </div>
                             <Button type="button" variant="outline" size="sm" :disabled="viesLoading"
                                 @click="validateVies">
                                 {{ viesLoading ? 'A validar...' : 'Validar VIES' }}
@@ -661,8 +737,8 @@ onMounted(fetchCountries);
                     </div>
 
                     <div class="field-wrap md:col-span-2">
-                        <Label for="entity-name">Nome <span class="field-required">*</span></Label>
-                        <Input id="entity-name" v-model="form.name" placeholder="Nome da entidade" />
+                        <Label for="entity-name">{{ nameLabel }} <span class="field-required">*</span></Label>
+                        <Input id="entity-name" v-model="form.name" :placeholder="namePlaceholder" />
                         <p v-if="formErrors.name" class="field-error">{{ formErrors.name }}</p>
                     </div>
 
@@ -748,7 +824,7 @@ onMounted(fetchCountries);
                         <Input id="entity-mobile" v-model="form.mobile" placeholder="+351 900 000 000" />
                     </div>
 
-                    <div class="field-wrap">
+                    <div v-if="showWebsiteField" class="field-wrap">
                         <Label for="entity-website">Website</Label>
                         <Input id="entity-website" v-model="form.website" placeholder="https://" />
                         <p v-if="formErrors.website" class="field-error">{{ formErrors.website }}</p>
@@ -795,7 +871,7 @@ onMounted(fetchCountries);
             <div class="flex justify-end gap-2 border-t pt-4" style="border-color: var(--color-border);">
                 <Button type="button" variant="outline" @click="emit('cancelled')">Cancelar</Button>
                 <Button type="submit" :disabled="entityStore.isSubmitting">
-                    {{ entityStore.isSubmitting ? 'A guardar...' : isEditing ? 'Guardar alterações' : 'Criar entidade'
+                    {{ entityStore.isSubmitting ? 'A guardar...' : isEditing ? 'Guardar alterações' : submitCreateLabel
                     }}
                 </Button>
             </div>

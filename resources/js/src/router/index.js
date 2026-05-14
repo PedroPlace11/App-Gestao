@@ -80,6 +80,15 @@ const router = createRouter({
 
 // Update document title on navigation
 router.afterEach((to) => {
+  if (to.path === '/login' || to.path === '/register' || to.path === '/two-factor-challenge') {
+    return;
+  }
+
+  if (to.path === '/') {
+    document.title = 'Cliente-Inovcorp';
+    return;
+  }
+
   const title = to.meta?.title;
   document.title = title ? `${title} — Inovcorp` : 'Inovcorp';
 });

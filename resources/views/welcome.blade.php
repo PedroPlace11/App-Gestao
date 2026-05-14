@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gestao Inteligente - Sistema de Gestao Empresarial</title>
+    <title>Inovcorp</title>
 
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -137,10 +137,9 @@
 
         .hero h1 {
             font-size: clamp(36px, 6vw, 72px);
-            line-height: 1.1;
-            letter-spacing: -0.5px;
+            line-height: 1.2;
             margin-bottom: 20px;
-            text-wrap: balance;
+            padding-bottom: 8px;
             background: linear-gradient(135deg, #f5f8ff, #d2def8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -584,7 +583,7 @@
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="{{ url('/') }}" aria-label="Página inicial">
-                <img src="{{ asset('image/logo/logo.png') }}" alt="Administração">
+                <img src="{{ asset('image/logo/logo.png') }}" alt="Inovcorp">
             </a>
 
             @if (Route::has('login'))
@@ -604,16 +603,15 @@
 
     <main class="page">
         <section class="hero">
-            <h1>Gerencie sua empresa com inteligência e eficiência</h1>
+            <h1>Transforme a gestão da sua empresa<br>com tecnologia de ponta</h1>
             <p>
-                Solução completa para gestão de clientes, fornecedores, propostas, encomendas e financeiro.
-                Centralize dados, automatize processos e tome decisões informadas numa plataforma integrada.
+                O Inovcorp é uma plataforma moderna e intuitiva para gestão empresarial, desenvolvida para impulsionar a produtividade, garantir segurança e facilitar a tomada de decisões estratégicas. Centralize operações, automatize tarefas e tenha uma visão 360º do seu negócio — tudo em um só lugar.
             </p>
 
             @if (Route::has('register'))
-                <a class="cta" href="{{ route('register') }}">Começar agora</a>
+                <a class="cta" href="{{ route('register') }}">Experimente Gratuitamente</a>
             @elseif (Route::has('login'))
-                <a class="cta" href="{{ route('login') }}">Começar agora</a>
+                <a class="cta" href="{{ route('login') }}">Entrar</a>
             @endif
         </section>
 
@@ -622,34 +620,34 @@
 
             <div class="cards">
                 <article class="card">
-                    <div class="icon">👥</div>
+                    <div class="icon">👥 CRM</div>
                     <h3>Clientes e Fornecedores</h3>
-                    <p>Gestão unificada de entidades, com filtragem por tipo, validação de NIF e integração com VIES.</p>
+                    <p>Gestão centralizada de entidades, com filtros avançados, validação automática de NIF e integração nativa com VIES.</p>
                 </article>
                 <article class="card">
-                    <div class="icon">📋</div>
+                    <div class="icon">📄 DOC</div>
                     <h3>Propostas e Encomendas</h3>
-                    <p>Crie propostas, converta com um clique em encomendas e exporte documentos em PDF profissional.</p>
+                    <p>Gere propostas profissionais, converta em encomendas com um clique e exporte documentos em PDF personalizado.</p>
                 </article>
                 <article class="card">
-                    <div class="icon">💰</div>
+                    <div class="icon">💸 FIN</div>
                     <h3>Financeiro Integrado</h3>
-                    <p>Controle faturas de fornecedor, anexos, comprovativos de pagamento e estado financeiro em tempo real.</p>
+                    <p>Controle total de faturas, anexos, comprovativos e fluxo financeiro em tempo real, com dashboards inteligentes.</p>
                 </article>
                 <article class="card">
-                    <div class="icon">📅</div>
+                    <div class="icon">🗓️ CAL</div>
                     <h3>Calendário Operacional</h3>
-                    <p>Agenda com FullCalendar para atividades, partilha de conhecimento e filtros por utilizador e entidade.</p>
+                    <p>Agenda visual com FullCalendar, partilha de atividades e filtros dinâmicos por utilizador e entidade.</p>
                 </article>
                 <article class="card">
-                    <div class="icon">🔐</div>
+                    <div class="icon">🔐 ACL</div>
                     <h3>Gestão de Acessos</h3>
-                    <p>Perfis, grupos de permissões e auditoria de logs para garantir governança e segurança de acesso.</p>
+                    <p>Perfis, grupos de permissões e auditoria detalhada para máxima segurança e conformidade.</p>
                 </article>
                 <article class="card">
-                    <div class="icon">⚙️</div>
+                    <div class="icon">⚙️ CFG</div>
                     <h3>Configuração e Personalização</h3>
-                    <p>Parametrize países, funções, tipos, IVA, empresa e demais dados mestres num único lugar.</p>
+                    <p>Parametrização flexível de países, funções, tipos, IVA, empresa e todos os dados mestres em um só local.</p>
                 </article>
             </div>
         </section>
@@ -658,7 +656,7 @@
     </main>
 
     <footer class="footer">
-        &copy; {{ now()->year }} Gestão Inteligente - Sistema de Gestão Empresarial. Todos os direitos reservados.
+        &copy; {{ now()->year }} Inovcorp — Plataforma de Gestão Empresarial. Todos os direitos reservados.
     </footer>
 
     <!-- Theme Toggle -->

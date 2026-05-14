@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -23,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const { get, remove } = useApi();
+const { get, post, remove } = useApi();
 const { toast } = useToast();
 
 const exampleSuppliers = [
@@ -63,10 +64,21 @@ const exampleSupplierOrders = [
 ];
 
 const supplierOrders = ref<any[]>(exampleSupplierOrders);
+const suppliers = ref<any[]>(exampleSuppliers);
 const isLoading = ref(false);
 const statusFilter = ref('');
+const isFormOpen = ref(false);
 const isDetailOpen = ref(false);
 const selectedOrder = ref<any | null>(null);
+const isSubmitting = ref(false);
+
+const form = ref({
+  number: '',
+  date: '',
+  supplier_id: null as number | null,
+  total_value: '',
+  status: 'draft' as 'draft' | 'closed' | 'invoiced',
+});
 
 const { searchQuery, page, paginatedRows, totalPages, setSearch, setPage } =
   usePaginatedTable<any>(
@@ -83,6 +95,17 @@ const { searchQuery, page, paginatedRows, totalPages, setSearch, setPage } =
 
 const hasRows = computed(() => paginatedRows.value.length > 0);
 
+const openCreate = () => {
+  form.value = {
+    number: '',
+    date: new Date().toISOString().slice(0, 10),
+    supplier_id: null,
+    total_value: '',
+    status: 'draft',
+  };
+  isFormOpen.value = true;
+};
+
 const openDetail = (order: any) => {
   selectedOrder.value = order;
   isDetailOpen.value = true;
@@ -98,13 +121,23 @@ const statusLabel = (status: string) => {
 const fetchSupplierOrders = async () => {
   isLoading.value = true;
   try {
-    const response = await get<PaginatedResponse<any>>('/v1/supplier-orders', {
-      per_page: 1000,
-      ...(statusFilter.value && { status: statusFilter.value }),
-    });
-    supplierOrders.value = response.data?.length ? response.data : exampleSupplierOrders;
+    const [ordersResponse, suppliersResponse] = await Promise.all([
+      get<PaginatedResponse<any>>('/v1/supplier-orders', {
+        per_page: 1000,
+        ...(statusFilter.value && { status: statusFilter.value }),
+      }),
+      get<PaginatedResponse<any>>('/v1/entities', { per_page: 1000, type: 'supplier' }),
+    ]);
+
+    suppliers.value = suppliersResponse.data?.length ? suppliersResponse.data : exampleSuppliers;
+    supplierOrders.value = ordersResponse.data?.length ? ordersResponse.data : exampleSupplierOrders;
+    supplierOrders.value = supplierOrders.value.map((order) => ({
+      ...order,
+      supplier: order.supplier ?? suppliers.value.find((supplier) => supplier.id === order.supplier_id) ?? null,
+    }));
   } catch {
     supplierOrders.value = exampleSupplierOrders;
+    suppliers.value = exampleSuppliers;
     toast({
       title: 'Erro ao carregar',
       description: 'Não foi possível obter as encomendas de fornecedor.',
@@ -112,6 +145,37 @@ const fetchSupplierOrders = async () => {
     });
   } finally {
     isLoading.value = false;
+  }
+};
+
+const submitForm = async () => {
+  isSubmitting.value = true;
+
+  try {
+    const created = await post<any>('/v1/supplier-orders', {
+      ...form.value,
+      total_value: Number(form.value.total_value),
+    });
+
+    supplierOrders.value.unshift({
+      ...created,
+      supplier: created.supplier ?? suppliers.value.find((supplier) => supplier.id === created.supplier_id) ?? null,
+    });
+
+    toast({
+      title: 'Encomenda criada',
+      description: 'Encomenda a fornecedor criada com sucesso.',
+    });
+
+    isFormOpen.value = false;
+  } catch (err: any) {
+    toast({
+      title: 'Erro ao guardar',
+      description: err?.response?.data?.message ?? 'Não foi possível criar a encomenda.',
+      variant: 'destructive',
+    });
+  } finally {
+    isSubmitting.value = false;
   }
 };
 
@@ -140,7 +204,7 @@ onMounted(fetchSupplierOrders);
   <Card>
     <CardHeader class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <CardTitle>Encomendas a Fornecedores</CardTitle>
-      <div class="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+      <div class="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
         <Input
           class="md:w-72"
           :model-value="searchQuery"
@@ -158,6 +222,8 @@ onMounted(fetchSupplierOrders);
             <SelectItem value="invoiced">Faturada</SelectItem>
           </SelectContent>
         </Select>
+        <div class="flex-1"></div>
+        <Button @click="openCreate" class="md:ml-4">Nova Encomenda</Button>
       </div>
     </CardHeader>
 
@@ -233,6 +299,57 @@ onMounted(fetchSupplierOrders);
       </div>
     </CardContent>
   </Card>
+
+  <Dialog :open="isFormOpen" @update:open="(open) => { if (!open) isFormOpen = false; }">
+    <DialogContent class="max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Nova Encomenda a Fornecedor</DialogTitle>
+      </DialogHeader>
+
+      <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitForm">
+        <div>
+          <Label>Número</Label>
+          <Input v-model="form.number" placeholder="ECF-2026-004" required />
+        </div>
+        <div>
+          <Label>Data</Label>
+          <Input v-model="form.date" type="date" required />
+        </div>
+        <div class="md:col-span-2">
+          <Label>Fornecedor</Label>
+          <Select v-model="form.supplier_id">
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o fornecedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Valor Total (€)</Label>
+          <Input v-model="form.total_value" type="number" min="0" step="0.01" required />
+        </div>
+        <div>
+          <Label>Estado</Label>
+          <Select v-model="form.status">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">Rascunho</SelectItem>
+              <SelectItem value="closed">Fechada</SelectItem>
+              <SelectItem value="invoiced">Faturada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div class="md:col-span-2 flex justify-end gap-2">
+          <Button type="button" variant="outline" @click="isFormOpen = false">Cancelar</Button>
+          <Button type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'A guardar...' : 'Guardar' }}</Button>
+        </div>
+      </form>
+    </DialogContent>
+  </Dialog>
 
   <Dialog :open="isDetailOpen" @update:open="(open) => { if (!open) isDetailOpen = false; }">
     <DialogContent class="max-w-lg">

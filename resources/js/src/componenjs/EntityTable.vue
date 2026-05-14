@@ -22,6 +22,7 @@ import { Search, Plus, Pencil, Trash2, Users, ChevronLeft, ChevronRight } from '
 const props = defineProps<{
     filterType?: EntityType;
     title?: string;
+    hideWebsite?: boolean;
 }>();
 
 const { get, remove } = useApi();
@@ -29,7 +30,10 @@ const { toast } = useToast();
 const entityStore = useEntityStore();
 
 const entities = ref<Entity[]>([]);
+const countries = ref<Array<{ id: number; name: string; code?: string }>>([]);
 const isLoading = ref(false);
+const isDetailOpen = ref(false);
+const selectedDetailEntity = ref<Entity | null>(null);
 
 const {
     searchQuery,
@@ -48,6 +52,41 @@ const {
 );
 
 const hasRows = computed(() => paginatedRows.value.length > 0);
+const isClientView = computed(() => props.filterType === 'client');
+const isSupplierView = computed(() => props.filterType === 'supplier');
+
+const createButtonLabel = computed(() => {
+    if (isClientView.value) return 'Nova Pessoa';
+    if (isSupplierView.value) return 'Nova Empresa';
+    return 'Nova Entidade';
+});
+
+const nameColumnLabel = computed(() => {
+    if (isClientView.value) return 'Nome completo';
+    if (isSupplierView.value) return 'Empresa';
+    return 'Nome';
+});
+
+const searchPlaceholder = computed(() => {
+    if (isClientView.value) return 'Buscar por nome ou NIF da pessoa...';
+    if (isSupplierView.value) return 'Buscar por empresa ou NIF...';
+    return 'Buscar por nome ou NIF...';
+});
+
+const showWebsiteColumn = computed(() => !props.hideWebsite && !isClientView.value);
+const emptyColspan = computed(() => (showWebsiteColumn.value ? 7 : 6));
+
+const modalTitle = computed(() => {
+    if (entityStore.selectedEntity) {
+        if (isClientView.value) return 'Editar Pessoa';
+        if (isSupplierView.value) return 'Editar Empresa';
+        return 'Editar Entidade';
+    }
+
+    if (isClientView.value) return 'Nova Pessoa';
+    if (isSupplierView.value) return 'Nova Empresa';
+    return 'Nova Entidade';
+});
 
 const modalOpen = computed({
     get: () => entityStore.isModalOpen,
@@ -58,15 +97,43 @@ const modalOpen = computed({
     },
 });
 
+const countryNameById = computed(() => {
+    const map = new Map<number, string>();
+    for (const country of countries.value) {
+        map.set(country.id, country.name);
+    }
+    return map;
+});
+
+const getCountryLabel = (entity: Entity) => {
+    if (entity.country_name?.trim()) return entity.country_name;
+
+    const nestedName = (entity as any).country?.name;
+    if (typeof nestedName === 'string' && nestedName.trim()) return nestedName;
+
+    const countryId = Number((entity as any).country_id ?? 0);
+    if (countryId && countryNameById.value.has(countryId)) {
+        return countryNameById.value.get(countryId) ?? '-';
+    }
+
+    return '-';
+};
+
 const fetchEntities = async () => {
     isLoading.value = true;
     try {
         const query: Record<string, string | number> = { per_page: 1000 };
         if (props.filterType) query.type = props.filterType;
 
-        const response = await get<PaginatedResponse<Entity>>('/entities', query);
-        entities.value = response.data ?? [];
+        const [entitiesResponse, countriesResponse] = await Promise.all([
+            get<PaginatedResponse<Entity>>('/entities', query),
+            get<PaginatedResponse<{ id: number; name: string; code?: string }>>('/countries', { per_page: 1000 }),
+        ]);
+
+        entities.value = entitiesResponse.data ?? [];
+        countries.value = countriesResponse.data ?? [];
     } catch (error) {
+        countries.value = [];
         toast({
             title: 'Erro ao carregar entidades',
             description: error instanceof Error ? error.message : 'Nao foi possivel obter os dados da tabela.',
@@ -80,6 +147,11 @@ const fetchEntities = async () => {
 const handleCreate = () => entityStore.openCreate();
 
 const handleEdit = (entity: Entity) => entityStore.openEdit(entity);
+
+const handleViewDetails = (entity: Entity) => {
+    selectedDetailEntity.value = entity;
+    isDetailOpen.value = true;
+};
 
 const handleDelete = async (entity: Entity) => {
     const confirmed = window.confirm(`Deseja realmente eliminar ${entity.name}?`);
@@ -142,7 +214,7 @@ onMounted(fetchEntities);
 
             <Button class="gap-2 self-start sm:self-auto" @click="handleCreate">
                 <Plus class="h-4 w-4" />
-                Nova Entidade
+                {{ createButtonLabel }}
             </Button>
         </div>
 
@@ -151,7 +223,7 @@ onMounted(fetchEntities);
             <CardHeader class="border-b pb-4">
                 <div class="relative w-full sm:max-w-xs">
                     <Search class="search-icon" />
-                    <Input class="pl-9" :model-value="searchQuery" placeholder="Buscar por nome ou NIF..."
+                    <Input class="pl-9" :model-value="searchQuery" :placeholder="searchPlaceholder"
                         @update:model-value="setSearch(String($event))" />
                 </div>
             </CardHeader>
@@ -172,10 +244,10 @@ onMounted(fetchEntities);
                         <TableHeader>
                             <TableRow class="table-header-row">
                                 <TableHead class="th-cell">NIF</TableHead>
-                                <TableHead class="th-cell">Nome</TableHead>
+                                <TableHead class="th-cell">{{ nameColumnLabel }}</TableHead>
                                 <TableHead class="th-cell">Telefone</TableHead>
                                 <TableHead class="th-cell">Telemovel</TableHead>
-                                <TableHead class="th-cell">Website</TableHead>
+                                <TableHead v-if="showWebsiteColumn" class="th-cell">Website</TableHead>
                                 <TableHead class="th-cell">Email</TableHead>
                                 <TableHead class="th-cell text-right">Ações</TableHead>
                             </TableRow>
@@ -185,10 +257,11 @@ onMounted(fetchEntities);
                             <TableRow v-for="entity in paginatedRows" :key="entity.id"
                                 class="entity-row group transition-colors">
                                 <TableCell class="td-sub font-mono text-sm font-medium">{{ entity.nif }}</TableCell>
-                                <TableCell class="td-main font-medium">{{ entity.name }}</TableCell>
+                                <TableCell class="td-main font-medium cursor-pointer hover:underline"
+                                    @click="handleViewDetails(entity)">{{ entity.name }}</TableCell>
                                 <TableCell class="td-sub text-sm">{{ entity.phone || '—' }}</TableCell>
                                 <TableCell class="td-sub text-sm">{{ entity.mobile || '—' }}</TableCell>
-                                <TableCell class="text-sm">
+                                <TableCell v-if="showWebsiteColumn" class="text-sm">
                                     <a v-if="entity.website" :href="entity.website" target="_blank"
                                         rel="noopener noreferrer"
                                         class="text-primary underline-offset-4 hover:underline">{{ entity.website }}</a>
@@ -211,7 +284,7 @@ onMounted(fetchEntities);
                             </TableRow>
 
                             <TableRow v-if="!hasRows">
-                                <TableCell colspan="7" class="py-16 text-center">
+                                <TableCell :colspan="emptyColspan" class="py-16 text-center">
                                     <div class="flex flex-col items-center gap-2">
                                         <Users class="h-10 w-10"
                                             style="color: var(--color-muted-foreground); opacity: 0.4;" />
@@ -249,11 +322,47 @@ onMounted(fetchEntities);
     <Dialog v-model:open="modalOpen">
         <DialogContent class="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden">
             <DialogHeader class="flex-shrink-0">
-                <DialogTitle>{{ entityStore.selectedEntity ? 'Editar Entidade' : 'Nova Entidade' }}</DialogTitle>
+                <DialogTitle>{{ modalTitle }}</DialogTitle>
             </DialogHeader>
             <div class="flex-1 overflow-y-auto pr-1">
-                <EntityForm :entity="entityStore.selectedEntity" @cancelled="entityStore.closeModal"
-                    @submitted="handleFormSubmitted" />
+                <div v-if="entityStore.selectedEntity?.description" class="mb-4 p-3 rounded bg-muted text-sm">
+                    <strong>Descrição:</strong>
+                    <span>{{ entityStore.selectedEntity.description }}</span>
+                </div>
+                                <EntityForm
+                                    :key="entityStore.selectedEntity ? entityStore.selectedEntity.id : 'new'"
+                                    :entity="entityStore.selectedEntity"
+                                    @cancelled="entityStore.closeModal"
+                                    :forced-type="props.filterType"
+                                    @submitted="handleFormSubmitted"
+                                />
+            </div>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog :open="isDetailOpen" @update:open="(open) => { if (!open) isDetailOpen = false; }">
+        <DialogContent class="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>{{ selectedDetailEntity?.name ?? 'Detalhe da Entidade' }}</DialogTitle>
+            </DialogHeader>
+
+            <div v-if="selectedDetailEntity" class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                <div><span class="font-medium">Tipo:</span> {{ selectedDetailEntity.type === 'client' ? 'Cliente' : selectedDetailEntity.type === 'supplier' ? 'Fornecedor' : '-' }}</div>
+                <div><span class="font-medium">NIF:</span> {{ selectedDetailEntity.nif ?? '-' }}</div>
+                <div><span class="font-medium">Email:</span> {{ selectedDetailEntity.email ?? '-' }}</div>
+                <div><span class="font-medium">Telefone:</span> {{ selectedDetailEntity.phone ?? '-' }}</div>
+                <div><span class="font-medium">Telemóvel:</span> {{ selectedDetailEntity.mobile ?? '-' }}</div>
+                <div v-if="showWebsiteColumn"><span class="font-medium">Website:</span> {{ selectedDetailEntity.website ?? '-' }}</div>
+                <div><span class="font-medium">País:</span> {{ getCountryLabel(selectedDetailEntity) }}</div>
+                <div class="md:col-span-2"><span class="font-medium">Morada:</span> {{ selectedDetailEntity.address ?? '-' }}</div>
+                <div><span class="font-medium">Código Postal:</span> {{ selectedDetailEntity.postal_code ?? '-' }}</div>
+                <div><span class="font-medium">Cidade:</span> {{ selectedDetailEntity.city ?? '-' }}</div>
+                <div class="md:col-span-2"><span class="font-medium">Descrição:</span> {{ selectedDetailEntity.description ?? '-' }}</div>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" @click="isDetailOpen = false">Fechar</Button>
+                <Button @click="() => { if (selectedDetailEntity) { isDetailOpen = false; handleEdit(selectedDetailEntity); } }">Editar</Button>
             </div>
         </DialogContent>
     </Dialog>

@@ -1,3 +1,16 @@
+import { watch } from 'vue';
+// Sempre limpa o formulário ao abrir o modal de criação
+watch(isCreateOpen, (open) => {
+  if (open) {
+    createForm.value = {
+      name: '',
+      email: '',
+      mobile: '',
+      roleName: 'Utilizador',
+      active: 'true',
+    };
+  }
+});
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useApi } from '../composables/useApi';

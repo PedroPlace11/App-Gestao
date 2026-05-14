@@ -69,6 +69,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   plugins:     [dayGridPlugin, timeGridPlugin, interactionPlugin],
   locale:      ptLocale,
   initialView: 'dayGridMonth',
+  titleFormat: { month: 'long' },
   headerToolbar: {
     left:   'prev,next today',
     center: 'title',
@@ -368,3 +369,9 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+:deep(.fc .fc-toolbar-title) {
+  text-transform: capitalize;
+}
+</style>

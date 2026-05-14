@@ -9,11 +9,15 @@ import { Form } from '@/components/ui/form';
 
 interface SimpleConfigFormData {
   name: string;
+  code: string;
+  rate: number | '';
 }
 
 const props = defineProps<{
   item?: any | null;
   endpoint: string;
+  showCodeField?: boolean;
+  showRateField?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -27,13 +31,19 @@ const loading = ref(false);
 
 const form = reactive<SimpleConfigFormData>({
   name: props.item?.name ?? '',
+  code: props.showCodeField ? String(props.item?.code ?? '') : '',
+  rate: props.showRateField ? Number(props.item?.rate ?? 0) : '',
 });
 
 const submit = async () => {
   loading.value = true;
   try {
-    const payload = { ...form };
-    
+    const payload = {
+      name: form.name,
+      ...(props.showCodeField ? { code: form.code.trim().toUpperCase() } : {}),
+      ...(props.showRateField ? { rate: Number(form.rate) } : {}),
+    };
+
     const result = props.item
       ? await put<any>(`/v1${props.endpoint}/${props.item.id}`, payload)
       : await post<any>(`/v1${props.endpoint}`, payload);
@@ -42,7 +52,7 @@ const submit = async () => {
       title: 'Sucesso',
       description: `Registo ${props.item ? 'atualizado' : 'criado'} com sucesso.`,
     });
-    
+
     emit('submitted', result);
   } catch (err: any) {
     toast({
@@ -65,6 +75,32 @@ const submit = async () => {
           id="name"
           v-model="form.name"
           placeholder="Digite o nome"
+          required
+        />
+      </div>
+
+      <div v-if="props.showCodeField" class="grid gap-2">
+        <Label for="code">Código do país</Label>
+        <Input
+          id="code"
+          v-model="form.code"
+          placeholder="Digite o código"
+          maxlength="2"
+          class="uppercase"
+          required
+        />
+      </div>
+
+      <div v-if="props.showRateField" class="grid gap-2">
+        <Label for="rate">Taxa (%)</Label>
+        <Input
+          id="rate"
+          v-model="form.rate"
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          placeholder="Digite a taxa"
           required
         />
       </div>

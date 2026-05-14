@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Autenticação de Dois Fatores — {{ config('app.name') }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('image/logo/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body style="margin:0;background:#07090f;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;">
