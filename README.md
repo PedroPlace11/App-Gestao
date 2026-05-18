@@ -87,7 +87,7 @@ App-Gestao é uma aplicação web em Laravel para gestão empresarial integrada,
 - **Backend**: Laravel 13, PHP 8.4+
 - **Frontend**: Vue 3, Vite 8
 - **Styling**: Tailwind CSS 4
-- **Base de Dados**: SQLite ou MySQL
+- **Base de Dados**: MySQL
 - **Geração de PDFs**: DomPDF
 - **Autenticação**: Laravel Sanctum
 - **Testes**: Pest PHP
@@ -102,7 +102,7 @@ Certifique-se de ter instalado:
 - Composer
 - Node.js 18+
 - npm ou yarn
-- Base de dados (SQLite ou MySQL)
+- Base de dados (MySQL)
 
 ### 1️⃣ Clonar o repositório
 
