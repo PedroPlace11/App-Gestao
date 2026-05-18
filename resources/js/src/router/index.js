@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 // Existing pages
+import DashboardPage from '../pages/DashboardPage.vue';
 import ClientsPage from '../pages/ClientsPage.vue';
 import SuppliersPage from '../pages/SuppliersPage.vue';
 import ContactsPage from '../pages/ContactsPage.vue';
@@ -28,12 +29,12 @@ import CompanyPage from '../pages/CompanyPage.vue';
 import ProfilePage from '../pages/ProfilePage.vue';
 
 const routes = [
-  { path: '/', component: ClientsPage, meta: { title: 'Clientes' } },
-  { path: '/dashboard', redirect: '/' },
+  { path: '/', component: DashboardPage, meta: { title: 'Dashboard' } },
+  { path: '/dashboard', component: DashboardPage, meta: { title: 'Dashboard' } },
   { path: '/perfil', component: ProfilePage, meta: { title: 'Perfil' } },
 
   // CRM
-  { path: '/clientes', redirect: '/' },
+  { path: '/clientes', component: ClientsPage, meta: { title: 'Clientes' } },
   { path: '/fornecedores', component: SuppliersPage, meta: { title: 'Fornecedores' } },
   { path: '/contactos', component: ContactsPage, meta: { title: 'Contactos' } },
 
@@ -84,13 +85,8 @@ router.afterEach((to) => {
     return;
   }
 
-  if (to.path === '/') {
-    document.title = 'Cliente-Inovcorp';
-    return;
-  }
-
   const title = to.meta?.title;
-  document.title = title ? `${title} — Inovcorp` : 'Inovcorp';
+  document.title = title && title !== 'Dashboard' ? `${title} — Inovcorp` : 'Inovcorp';
 });
 
 export default router;
