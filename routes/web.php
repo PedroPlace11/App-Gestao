@@ -11,7 +11,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::redirect('/dashboard', '/');
 Route::redirect('/clientes', '/');
 
 // SPA — todas as rotas autenticadas servem a app Vue

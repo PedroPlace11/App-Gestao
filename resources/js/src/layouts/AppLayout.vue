@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import {
+    LayoutDashboard,
     Users,
     Building2,
     Phone,
@@ -120,7 +121,10 @@ const handleLogout = async () => {
 
                 <div class="nav-section-label">Principal</div>
 
-                <RouterLink to="/" class="nav-item" active-class="nav-item--active" @click="closeSidebar">
+                <RouterLink to="/dashboard" class="nav-item" active-class="nav-item--active" @click="closeSidebar">
+                    <LayoutDashboard class="nav-icon" /> Dashboard
+                </RouterLink>
+                <RouterLink to="/clientes" class="nav-item" active-class="nav-item--active" @click="closeSidebar">
                     <Users class="nav-icon" /> Clientes
                 </RouterLink>
                 <RouterLink to="/fornecedores" class="nav-item" active-class="nav-item--active" @click="closeSidebar">
