@@ -54,7 +54,7 @@ class InvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'number'            => 'required|string|unique:invoices,number',
+            'number'            => 'nullable|string|unique:invoices,number',
             'issue_date'        => 'required|date',
             'due_date'          => 'required|date|after_or_equal:issue_date',
             'supplier_id'       => 'required|exists:entities,id',
@@ -63,6 +63,11 @@ class InvoiceController extends Controller
             'document'          => 'nullable|file|mimes:pdf|max:10240',
             'status'            => 'sometimes|in:pending,paid',
         ]);
+
+        // If no number is provided, generate one using FAT-YYYY-XXX format.
+        if (empty($validated['number'])) {
+            $validated['number'] = $this->generateNextInvoiceNumber();
+        }
 
         $validated['user_id'] = $request->user()->id;
 
@@ -230,6 +235,31 @@ class InvoiceController extends Controller
         $pdf = $this->archiveDocumentPdfService->generate($validated);
 
         return $pdf->download($validated['name']);
+    }
+
+    private function generateNextInvoiceNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = "FAT-{$year}-";
+
+        $lastInvoice = Invoice::query()
+            ->where('number', 'like', $prefix . '%')
+            ->orderByDesc('number')
+            ->first();
+
+        $nextSequence = 1;
+
+        if ($lastInvoice && preg_match('/^FAT-' . preg_quote($year, '/') . '-(\\d+)$/', $lastInvoice->number, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        do {
+            $number = sprintf('%s%03d', $prefix, $nextSequence);
+            $exists = Invoice::query()->where('number', $number)->exists();
+            $nextSequence++;
+        } while ($exists);
+
+        return $number;
     }
 }
 

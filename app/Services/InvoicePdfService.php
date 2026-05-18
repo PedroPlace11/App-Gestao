@@ -19,7 +19,7 @@ class InvoicePdfService
         $subtotal = collect($items)->sum(fn ($item) => $item['unit_price'] * $item['quantity']);
         $taxAmount = max(0, (float) $invoice->total_value - $subtotal);
 
-        $pdf = Pdf::loadView('pdf.invoice_supplier', [
+        $pdf = Pdf::loadView('pdf.template', [
             'invoice' => $invoice,
             'company' => $company,
             'items' => $items,
@@ -69,7 +69,7 @@ class InvoicePdfService
         $subtotal = collect($items)->sum(fn ($item) => $item['unit_price'] * $item['quantity']);
         $taxAmount = max(0, (float) $invoice->total_value - $subtotal);
 
-        $pdf = Pdf::loadView('pdf.invoice_supplier', [
+        $pdf = Pdf::loadView('pdf.template', [
             'invoice' => $invoice,
             'company' => $company,
             'items' => $items,

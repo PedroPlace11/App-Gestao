@@ -15,6 +15,8 @@ use App\Models\TaxRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use App\Models\Company as CompanyModel;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,16 +48,46 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('v1/configuration')->group(function () {
         Route::get('/company', function () {
             // Return company configuration
-            return response()->json([
-                'message' => 'Company configuration endpoint',
-            ]);
+            $company = CompanyModel::query()->first();
+            if (!$company) {
+                return response()->json(['message' => 'Company not found'], 404);
+            }
+            return response()->json($company);
         });
 
         Route::put('/company', function (Request $request) {
-            // Update company configuration
-            return response()->json([
-                'message' => 'Company configuration updated',
+            // Validate request data
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'logo' => 'nullable|file|image|max:4096',
+                'address' => 'nullable|string|max:255',
+                'postal_code' => 'nullable|string|max:20',
+                'city' => 'nullable|string|max:100',
+                'tax_id' => 'nullable|string|max:20',
             ]);
+
+            // Update or create company configuration
+            $company = CompanyModel::query()->first();
+            if (!$company) {
+                $company = new CompanyModel();
+            }
+
+            if ($request->hasFile('logo')) {
+                if (!empty($company->logo) && str_starts_with($company->logo, '/storage/')) {
+                    $previousPath = substr($company->logo, strlen('/storage/'));
+                    Storage::disk('public')->delete($previousPath);
+                }
+
+                $logoPath = $request->file('logo')->store('company-logos', 'public');
+                $validated['logo'] = '/storage/' . $logoPath;
+            } else {
+                unset($validated['logo']);
+            }
+
+            $company->fill($validated);
+            $company->save();
+
+            return response()->json(['message' => 'Company configuration updated successfully', 'company' => $company]);
         });
     });
 

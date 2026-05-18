@@ -40,7 +40,7 @@ class SupplierOrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'number'      => 'required|string|unique:supplier_orders,number',
+            'number'      => 'nullable|string|unique:supplier_orders,number',
             'date'        => 'required|date',
             'supplier_id' => 'required|exists:entities,id',
             'order_id'    => 'nullable|exists:orders,id',
@@ -49,6 +49,11 @@ class SupplierOrderController extends Controller
             'items'       => 'nullable|array',
             'notes'       => 'nullable|string',
         ]);
+
+        // If no number is provided, generate one using ECF-YYYY-XXX format.
+        if (empty($validated['number'])) {
+            $validated['number'] = $this->generateNextSupplierOrderNumber();
+        }
 
         $validated['user_id'] = $request->user()->id;
 
@@ -99,5 +104,30 @@ class SupplierOrderController extends Controller
         $supplierOrder->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function generateNextSupplierOrderNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = "ECF-{$year}-";
+
+        $lastSupplierOrder = SupplierOrder::query()
+            ->where('number', 'like', $prefix . '%')
+            ->orderByDesc('number')
+            ->first();
+
+        $nextSequence = 1;
+
+        if ($lastSupplierOrder && preg_match('/^ECF-' . preg_quote($year, '/') . '-(\d+)$/', $lastSupplierOrder->number, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        do {
+            $number = sprintf('%s%03d', $prefix, $nextSequence);
+            $exists = SupplierOrder::query()->where('number', $number)->exists();
+            $nextSequence++;
+        } while ($exists);
+
+        return $number;
     }
 }

@@ -19,7 +19,7 @@ class OrderPdfService
         $subtotal = collect($items)->sum(fn($i) => $i['unit_price'] * $i['quantity']);
         $tax_amount = $order->total_value - $subtotal;
 
-        $pdf = Pdf::loadView('pdf.order', [
+        $pdf = Pdf::loadView('pdf.template', [
             'order'      => $order,
             'company'    => $company,
             'items'      => $items,

@@ -49,7 +49,7 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'number'      => 'required|string|unique:orders,number',
+            'number'      => 'nullable|string|unique:orders,number',
             'date'        => 'required|date',
             'client_id'   => 'required|exists:entities,id',
             'total_value' => 'required|numeric|min:0',
@@ -58,6 +58,11 @@ class OrderController extends Controller
             'items'       => 'nullable|array',
             'notes'       => 'nullable|string',
         ]);
+
+        // If no number is provided, generate one using ENC-YYYY-XXX format.
+        if (empty($validated['number'])) {
+            $validated['number'] = $this->generateNextOrderNumber();
+        }
 
         $validated['user_id'] = $request->user()->id;
 
@@ -203,6 +208,31 @@ class OrderController extends Controller
         $pdf = $this->pdfService->generate($order);
 
         return $pdf->download("encomenda-{$validated['number']}.pdf");
+    }
+
+    private function generateNextOrderNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = "ENC-{$year}-";
+
+        $lastOrder = Order::query()
+            ->where('number', 'like', $prefix . '%')
+            ->orderByDesc('number')
+            ->first();
+
+        $nextSequence = 1;
+
+        if ($lastOrder && preg_match('/^ENC-' . preg_quote($year, '/') . '-(\d+)$/', $lastOrder->number, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        do {
+            $number = sprintf('%s%03d', $prefix, $nextSequence);
+            $exists = Order::query()->where('number', $number)->exists();
+            $nextSequence++;
+        } while ($exists);
+
+        return $number;
     }
 }
 

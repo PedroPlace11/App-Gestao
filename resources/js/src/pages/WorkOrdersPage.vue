@@ -77,8 +77,30 @@ const statusClass = (status: WorkOrderItem['status']) => {
   return 'bg-green-100 text-green-800';
 };
 
+const generateNextWorkOrderNumber = () => {
+  const year = String(new Date().getFullYear());
+  const prefix = `OT-${year}-`;
+
+  const currentNumbers = workOrders.value
+    .map((item) => String(item.number ?? '').toUpperCase().trim())
+    .filter((number) => number.startsWith(prefix));
+
+  let nextSequence = 1;
+
+  for (const number of currentNumbers) {
+    const match = number.match(new RegExp(`^OT-${year}-(\\d+)$`));
+    if (!match) continue;
+    const parsed = Number(match[1]);
+    if (Number.isFinite(parsed) && parsed >= nextSequence) {
+      nextSequence = parsed + 1;
+    }
+  }
+
+  return `${prefix}${String(nextSequence).padStart(3, '0')}`;
+};
+
 const resetForm = () => {
-  form.number = '';
+  form.number = generateNextWorkOrderNumber();
   form.client = '';
   form.technician = '';
   form.status = 'open';
@@ -99,14 +121,10 @@ const closeCreateModal = () => {
 const validateForm = () => {
   Object.keys(errors).forEach((key) => delete errors[key]);
 
-  if (!form.number.trim()) errors.number = 'O número é obrigatório.';
   if (!form.client.trim()) errors.client = 'O cliente é obrigatório.';
   if (!form.technician.trim()) errors.technician = 'O técnico é obrigatório.';
   if (!form.scheduled_date.trim()) errors.scheduled_date = 'A data é obrigatória.';
   if (!form.description.trim()) errors.description = 'A descrição é obrigatória.';
-
-  const duplicated = workOrders.value.some((item) => item.number.toUpperCase() === form.number.trim().toUpperCase());
-  if (duplicated) errors.number = 'Já existe uma ordem com esse número.';
 
   return Object.keys(errors).length === 0;
 };
@@ -183,7 +201,12 @@ const submitCreate = () => {
       <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitCreate">
         <div class="space-y-2">
           <Label for="order-number">Número</Label>
-          <Input id="order-number" v-model="form.number" placeholder="Ex: OT-2026-004" />
+          <Input
+            id="order-number"
+            v-model="form.number"
+            placeholder="Gerado automaticamente ao guardar"
+            disabled
+          />
           <p v-if="errors.number" class="text-sm text-destructive">{{ errors.number }}</p>
         </div>
 
