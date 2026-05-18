@@ -168,7 +168,8 @@ const submitForm = async () => {
       const idx = invoices.value.findIndex((i) => i.id === updated.id);
       if (idx >= 0) invoices.value[idx] = updated;
     } else {
-      const created = await post<Invoice>('/invoices', payload);
+      const { number, ...createPayload } = payload;
+      const created = await post<Invoice>('/invoices', createPayload);
       invoices.value.unshift(created);
     }
     toast({ title: selectedInvoice.value ? 'Fatura atualizada' : 'Fatura criada' });
@@ -292,7 +293,11 @@ onMounted(fetchData);
         <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitForm">
           <div>
             <Label>Numero</Label>
-            <Input v-model="form.number" placeholder="FAT-001" />
+            <Input
+              v-model="form.number"
+              :disabled="!selectedInvoice"
+              :placeholder="selectedInvoice ? 'FAT-001' : 'Gerado automaticamente ao guardar'"
+            />
           </div>
           <div>
             <Label>Data Emissao</Label>

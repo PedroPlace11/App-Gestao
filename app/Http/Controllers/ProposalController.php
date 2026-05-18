@@ -49,7 +49,7 @@ class ProposalController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'number'        => 'required|string|unique:proposals,number',
+            'number'        => 'nullable|string|unique:proposals,number',
             'date'          => 'required|date',
             'client_id'     => 'required|exists:entities,id',
             'validity'      => 'required|date|after_or_equal:date',
@@ -63,6 +63,11 @@ class ProposalController extends Controller
             'items.*.unit_price'  => 'required|numeric|min:0',
             'items.*.tax_rate'    => 'required|numeric|min:0|max:100',
         ]);
+
+        // If no number is provided, generate one using PROP-YYYY-XXX format.
+        if (empty($validated['number'])) {
+            $validated['number'] = $this->generateNextProposalNumber();
+        }
 
         $validated['user_id'] = $request->user()->id;
 
@@ -168,6 +173,31 @@ class ProposalController extends Controller
     public function downloadPdf(Proposal $proposal): \Illuminate\Http\Response
     {
         return $this->pdfService->generate($proposal)->download("proposta-{$proposal->number}.pdf");
+    }
+
+    private function generateNextProposalNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = "PROP-{$year}-";
+
+        $lastProposal = Proposal::query()
+            ->where('number', 'like', $prefix . '%')
+            ->orderByDesc('number')
+            ->first();
+
+        $nextSequence = 1;
+
+        if ($lastProposal && preg_match('/^PROP-' . preg_quote($year, '/') . '-(\d+)$/', $lastProposal->number, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        do {
+            $number = sprintf('%s%03d', $prefix, $nextSequence);
+            $exists = Proposal::query()->where('number', $number)->exists();
+            $nextSequence++;
+        } while ($exists);
+
+        return $number;
     }
 }
 

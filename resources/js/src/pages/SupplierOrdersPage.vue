@@ -152,8 +152,9 @@ const submitForm = async () => {
   isSubmitting.value = true;
 
   try {
+    const { number, ...createPayload } = form.value;
     const created = await post<any>('/v1/supplier-orders', {
-      ...form.value,
+      ...createPayload,
       total_value: Number(form.value.total_value),
     });
 
@@ -309,7 +310,11 @@ onMounted(fetchSupplierOrders);
       <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitForm">
         <div>
           <Label>Número</Label>
-          <Input v-model="form.number" placeholder="ECF-2026-004" required />
+          <Input
+            v-model="form.number"
+            placeholder="Gerado automaticamente ao guardar"
+            disabled
+          />
         </div>
         <div>
           <Label>Data</Label>

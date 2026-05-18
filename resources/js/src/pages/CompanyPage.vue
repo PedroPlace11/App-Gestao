@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Form } from '@/components/ui/form';
 
 const { get, put } = useApi();
 const { toast } = useToast();
 const isLoading = ref(false);
+const logoFile = ref<File | null>(null);
 const form = reactive({
   name: '',
   logo: '',
@@ -20,10 +20,15 @@ const form = reactive({
   tax_id: '',
 });
 
+const onLogoChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  logoFile.value = target.files?.[0] ?? null;
+};
+
 const fetchCompany = async () => {
   isLoading.value = true;
   try {
-    const company = await get('/company');
+    const company = await get('/configuration/company');
     Object.assign(form, company);
   } catch {
     toast({
@@ -39,7 +44,20 @@ const fetchCompany = async () => {
 const submit = async () => {
   isLoading.value = true;
   try {
-    await put('/company', form);
+    const payload = new FormData();
+    payload.append('name', form.name ?? '');
+    payload.append('address', form.address ?? '');
+    payload.append('postal_code', form.postal_code ?? '');
+    payload.append('city', form.city ?? '');
+    payload.append('tax_id', form.tax_id ?? '');
+
+    if (logoFile.value) {
+      payload.append('logo', logoFile.value);
+    }
+
+    await put('/configuration/company', payload);
+    logoFile.value = null;
+
     toast({ title: 'Sucesso', description: 'Dados da empresa atualizados com sucesso.' });
   } catch {
     toast({
@@ -62,11 +80,11 @@ onMounted(fetchCompany);
     </CardHeader>
 
     <CardContent>
-      <Form @submit="submit">
+      <form @submit.prevent="submit">
         <div class="space-y-4">
           <div class="grid gap-2">
             <Label>Logotipo</Label>
-            <Input type="file" accept="image/*" />
+            <Input type="file" accept="image/*" @change="onLogoChange" />
           </div>
 
           <div class="grid gap-2">
@@ -100,7 +118,7 @@ onMounted(fetchCompany);
             </Button>
           </div>
         </div>
-      </Form>
+      </form>
     </CardContent>
   </Card>
 </template>

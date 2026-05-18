@@ -152,7 +152,8 @@ const submitForm = async () => {
       const idx = orders.value.findIndex((o) => o.id === updated.id);
       if (idx >= 0) orders.value[idx] = updated;
     } else {
-      const created = await post<Order>('/orders', payload);
+      const { number, ...createPayload } = payload;
+      const created = await post<Order>('/orders', createPayload);
       orders.value.unshift(created);
     }
     toast({ title: selectedOrder.value ? 'Encomenda atualizada' : 'Encomenda criada' });
@@ -255,7 +256,11 @@ onMounted(fetchData);
         <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitForm">
           <div>
             <Label>Numero</Label>
-            <Input v-model="form.number" placeholder="ENC-001" />
+            <Input
+              v-model="form.number"
+              :disabled="!selectedOrder"
+              :placeholder="selectedOrder ? 'ENC-001' : 'Gerado automaticamente ao guardar'"
+            />
           </div>
           <div>
             <Label>Data</Label>

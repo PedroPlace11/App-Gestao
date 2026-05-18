@@ -176,7 +176,8 @@ const submitForm = async () => {
       const idx = proposals.value.findIndex((p) => p.id === updated.id);
       if (idx >= 0) proposals.value[idx] = updated;
     } else {
-      const created = await post<Proposal>('/proposals', payload);
+      const { number, ...createPayload } = payload;
+      const created = await post<Proposal>('/proposals', createPayload);
       proposals.value.unshift(created);
     }
     toast({ title: selectedProposal.value ? 'Proposta atualizada' : 'Proposta criada' });
@@ -342,7 +343,11 @@ onMounted(fetchData);
         <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitForm">
           <div>
             <Label>Numero</Label>
-            <Input v-model="form.number" placeholder="PROP-001" />
+            <Input
+              v-model="form.number"
+              :disabled="!selectedProposal"
+              :placeholder="selectedProposal ? 'PROP-001' : 'Gerado automaticamente ao guardar'"
+            />
           </div>
           <div>
             <Label>Data</Label>

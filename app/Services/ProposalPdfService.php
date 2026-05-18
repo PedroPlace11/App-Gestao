@@ -20,7 +20,7 @@ class ProposalPdfService
         $subtotal = collect($items)->sum(fn($i) => $i['unit_price'] * $i['quantity']);
         $tax_amount = $proposal->total_value - $subtotal;
 
-        $pdf = Pdf::loadView('pdf.proposal', [
+        $pdf = Pdf::loadView('pdf.template', [
             'proposal'   => $proposal,
             'company'    => $company,
             'items'      => $items,
