@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Contact;
 use App\Models\ContactFunction;
+use App\Models\Company;
 use App\Models\Country;
 use App\Models\Entity;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -15,6 +16,8 @@ class EntitySeeder extends Seeder
 
     public function run(): void
     {
+        $defaultCompanyId = Company::query()->orderBy('id', 'asc')->value('id');
+
         $countryId = Country::query()
             ->where('code', 'PT')
             ->value('id') ?? Country::query()->value('id');
@@ -30,6 +33,10 @@ class EntitySeeder extends Seeder
         foreach ($this->sampleEntities($countryId) as $entityData) {
             $contactData = $entityData['contact'];
             unset($entityData['contact']);
+
+            if ($defaultCompanyId && empty($entityData['company_id'])) {
+                $entityData['company_id'] = $defaultCompanyId;
+            }
 
             $entity = $this->upsertEntity($entityData);
 
@@ -306,7 +313,9 @@ class EntitySeeder extends Seeder
 
     private function upsertEntity(array $attributes): Entity
     {
-        $entity = Entity::query()->firstOrNew(['number' => $attributes['number']]);
+        $entity = Entity::query()
+            ->withoutGlobalScopes()
+            ->firstOrNew(['number' => $attributes['number']]);
 
         foreach ($attributes as $key => $value) {
             $entity->{$key} = $value;
@@ -319,7 +328,9 @@ class EntitySeeder extends Seeder
 
     private function upsertContact(Entity $entity, array $attributes): void
     {
-        $contact = Contact::query()->firstOrNew(['number' => $attributes['number']]);
+        $contact = Contact::query()
+            ->withoutGlobalScopes()
+            ->firstOrNew(['number' => $attributes['number']]);
         $contact->entity_id = $entity->id;
 
         foreach ($attributes as $key => $value) {

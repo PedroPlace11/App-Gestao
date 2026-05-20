@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Entity extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'number', 'type', 'nif', 'name', 'address', 'postal_code', 'city', 'country_id',
+        'company_id', 'number', 'type', 'nif', 'name', 'address', 'postal_code', 'city', 'country_id',
         'phone', 'mobile', 'website', 'email', 'rgpd_consent', 'observations', 'active',
     ];
 

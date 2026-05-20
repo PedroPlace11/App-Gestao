@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Invoice extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'number', 'issue_date', 'due_date', 'supplier_id',
+        'company_id', 'number', 'issue_date', 'due_date', 'supplier_id',
         'supplier_order_id', 'total_value', 'document',
         'payment_proof', 'status', 'user_id',
     ];

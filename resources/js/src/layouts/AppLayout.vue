@@ -31,9 +31,18 @@ import {
     LogOut,
     User,
 } from 'lucide-vue-next';
+import { useTenantStore } from '../stores/tenantStore';
 
 const router = useRouter();
 const route = useRoute();
+const tenantStore = useTenantStore();
+
+// Navegação dedicada para o clique na área do tenant
+const goToTenantManagement = (e?: Event) => {
+    // Só navega se não for um clique no <select>
+    if (e && e.target && (e.target as HTMLElement).tagName === 'SELECT') return;
+    router.push('/tenants');
+};
 
 // Auth user
 const authUser = ref((window as any).__AUTH_USER__ ?? null);
@@ -48,6 +57,7 @@ const syncAuthUser = (event: Event) => {
 
 onMounted(() => {
     window.addEventListener('auth-user-updated', syncAuthUser as EventListener);
+    tenantStore.fetchTenants();
 });
 
 onBeforeUnmount(() => {
@@ -94,6 +104,11 @@ const handleLogout = async () => {
     } catch {
         window.location.href = '/';
     }
+};
+
+const handleTenantChange = async (event: Event) => {
+    const target = event.target as HTMLSelectElement;
+    await tenantStore.switchTenant(Number(target.value));
 };
 </script>
 
@@ -280,6 +295,33 @@ const handleLogout = async () => {
 
         <!-- Main -->
         <div class="main-wrapper">
+            <header class="topbar">
+                <button class="mobile-menu-btn" @click="sidebarOpen = true">
+                    <Menu class="h-5 w-5" />
+                </button>
+
+                <div class="topbar-brand">{{ route.meta?.title ?? 'Inovcorp' }}</div>
+
+                <div class="topbar-tenant-wrap" style="cursor:pointer;" @click="goToTenantManagement">
+                    <span class="topbar-tenant-label">Tenant ativo:</span>
+                    <select
+                        class="topbar-tenant-select"
+                        :value="tenantStore.activeTenantId"
+                        :disabled="tenantStore.loading || tenantStore.tenants.length === 0"
+                        @change.stop="handleTenantChange"
+                        @click.stop
+                    >
+                        <option v-if="tenantStore.tenants.length === 0" value="">Sem tenants</option>
+                        <option
+                            v-for="tenant in tenantStore.tenants"
+                            :key="tenant.id"
+                            :value="tenant.id"
+                        >
+                            {{ tenant.name }}{{ tenant.is_active ? ' (ativo)' : '' }}
+                        </option>
+                    </select>
+                </div>
+            </header>
 
             <!-- Content -->
             <main class="main-content">
@@ -624,12 +666,49 @@ const handleLogout = async () => {
 }
 
 .topbar-brand {
+    display: flex;
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
     font-weight: 700;
     color: #1e293b;
     letter-spacing: -0.01em;
+}
+
+.topbar-tenant-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topbar-tenant-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.topbar-tenant-select {
+    min-width: 220px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #0f172a;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 0.8375rem;
+    outline: none;
+}
+
+.topbar-tenant-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .2);
+}
+
+.topbar-tenant-select:disabled {
+    opacity: .65;
+    cursor: not-allowed;
 }
 
 .topbar-user {
@@ -704,6 +783,16 @@ const handleLogout = async () => {
 
 :global(.dark) .topbar-username {
     color: #cbd5e1;
+}
+
+:global(.dark) .topbar-tenant-label {
+    color: #94a3b8;
+}
+
+:global(.dark) .topbar-tenant-select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
 }
 
 :global(.dark) .main-content {

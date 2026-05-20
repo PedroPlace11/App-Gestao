@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'number', 'date', 'client_id', 'total_value', 'status',
+        'company_id', 'number', 'date', 'client_id', 'total_value', 'status',
         'proposal_id', 'user_id', 'items', 'notes',
     ];
 

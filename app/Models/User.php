@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'active'])]
+#[Fillable(['name', 'email', 'password', 'active', 'active_company_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -58,5 +58,22 @@ class User extends Authenticatable
     public function calendarEvents()
     {
         return $this->hasMany(CalendarEvent::class);
+    }
+
+    public function activeCompany()
+    {
+        return $this->belongsTo(Company::class, 'active_company_id');
+    }
+
+    public function companies()
+    {
+        return $this->belongsToMany(Company::class)
+            ->withPivot(['role', 'is_owner'])
+            ->withTimestamps();
+    }
+
+    public function ownedCompanies()
+    {
+        return $this->hasMany(Company::class, 'owner_user_id');
     }
 }
