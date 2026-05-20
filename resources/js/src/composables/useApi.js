@@ -26,6 +26,16 @@ function getCsrfToken() {
   return token || '';
 }
 
+function getActiveTenantId() {
+  const fromStorage = localStorage.getItem('active-tenant-id');
+  if (fromStorage) {
+    return fromStorage;
+  }
+
+  const fromBootContext = window.__TENANT_CONTEXT__?.active_tenant_id;
+  return fromBootContext ? String(fromBootContext) : '';
+}
+
 export function useApi() {
   const loading = ref(false);
   const error = ref(null);
@@ -44,6 +54,11 @@ export function useApi() {
       const csrfToken = getCsrfToken();
       if (csrfToken) {
         headers.set('X-CSRF-TOKEN', csrfToken);
+      }
+
+      const activeTenantId = getActiveTenantId();
+      if (activeTenantId) {
+        headers.set('X-Tenant-Id', activeTenantId);
       }
 
       let body;

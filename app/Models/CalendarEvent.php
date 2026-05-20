@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CalendarEvent extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'date', 'time', 'duration', 'entity_id', 'type_id', 'action_id',
+        'company_id', 'date', 'time', 'duration', 'entity_id', 'type_id', 'action_id',
         'description', 'knowledge', 'shared_with', 'status', 'user_id',
     ];
 

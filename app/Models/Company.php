@@ -10,12 +10,19 @@ class Company extends Model
     use HasFactory;
 
     protected $fillable = [
+        'owner_user_id',
         'name',
+        'slug',
         'logo',
         'address',
         'postal_code',
         'city',
         'tax_id',
+        'settings',
+    ];
+
+    protected $casts = [
+        'settings' => 'array',
     ];
 
     /**
@@ -29,5 +36,22 @@ class Company extends Model
     public function bankAccounts()
     {
         return $this->hasMany(BankAccount::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot(['role', 'is_owner'])
+            ->withTimestamps();
+    }
+
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class);
     }
 }

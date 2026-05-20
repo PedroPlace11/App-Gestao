@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Contact extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'number', 'entity_id', 'first_name', 'last_name', 'function_id',
+        'company_id', 'number', 'entity_id', 'first_name', 'last_name', 'function_id',
         'phone', 'mobile', 'email', 'rgpd_consent', 'observations', 'active',
     ];
 

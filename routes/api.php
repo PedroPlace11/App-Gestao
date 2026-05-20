@@ -9,13 +9,14 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\TenantController;
 use App\Models\Country;
 use App\Models\SupplierOrder;
 use App\Models\TaxRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use App\Models\Company as CompanyModel;
 use Illuminate\Support\Facades\Storage;
 
 /*
@@ -31,27 +32,69 @@ use Illuminate\Support\Facades\Storage;
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    // Tenants
+    Route::prefix('v1/tenants')->group(function () {
+        Route::get('/', [TenantController::class, 'index']);
+        Route::post('/', [TenantController::class, 'store']);
+        Route::get('/current', [TenantController::class, 'current']);
+        Route::post('/switch', [TenantController::class, 'switch']);
+        // Onboarding self-service
+        Route::post('/onboarding', [\App\Http\Controllers\TenantOnboardingController::class, 'create']);
+        Route::get('/{company}/onboarding-checklist', [\App\Http\Controllers\TenantOnboardingController::class, 'onboardingChecklist']);
+        // Upgrade/downgrade de plano
+        Route::post('/{company}/change-plan', [\App\Http\Controllers\TenantOnboardingController::class, 'changePlan']);
+        // Logs de alterações de plano
+        Route::get('/{company}/plan-logs', [\App\Http\Controllers\TenantOnboardingController::class, 'planLogs']);
+        Route::put('/preferences', [TenantController::class, 'updatePreferences']);
+        Route::put('/onboarding-checklist', [TenantController::class, 'updateOnboardingChecklist']);
+    });
+
+    // Billing
+    Route::prefix('v1/billing')->group(function () {
+        Route::get('/plans', [BillingController::class, 'plans']);
+        Route::get('/subscription', [BillingController::class, 'subscription']);
+        Route::post('/change-plan', [BillingController::class, 'changePlan']);
+        Route::post('/cancel', [BillingController::class, 'cancel']);
+        Route::get('/usage', [BillingController::class, 'usage']);
+        Route::get('/logs', [BillingController::class, 'auditLogs']);
+    });
+
     // Dashboard Statistics
-    Route::get('/v1/dashboard', function () {
+    Route::get('/v1/dashboard', function (Request $request) {
+        $tenantId = (int) ($request->attributes->get('tenant_id') ?? 0);
+
+        if ($tenantId <= 0) {
+            return response()->json([
+                'total_entities' => 0,
+                'total_contacts' => 0,
+                'total_proposals' => 0,
+                'total_orders' => 0,
+                'total_supplier_orders' => 0,
+                'total_invoices' => 0,
+                'total_calendar_events' => 0,
+            ]);
+        }
+
         return response()->json([
-            'total_entities' => DB::table('entities')->count(),
-            'total_contacts' => DB::table('contacts')->count(),
-            'total_proposals' => DB::table('proposals')->count(),
-            'total_orders' => DB::table('orders')->count(),
-            'total_supplier_orders' => DB::table('supplier_orders')->count(),
-            'total_invoices' => DB::table('invoices')->count(),
-            'total_calendar_events' => DB::table('calendar_events')->count(),
+            'total_entities' => DB::table('entities')->where('company_id', $tenantId)->count(),
+            'total_contacts' => DB::table('contacts')->where('company_id', $tenantId)->count(),
+            'total_proposals' => DB::table('proposals')->where('company_id', $tenantId)->count(),
+            'total_orders' => DB::table('orders')->where('company_id', $tenantId)->count(),
+            'total_supplier_orders' => DB::table('supplier_orders')->where('company_id', $tenantId)->count(),
+            'total_invoices' => DB::table('invoices')->where('company_id', $tenantId)->count(),
+            'total_calendar_events' => DB::table('calendar_events')->where('company_id', $tenantId)->count(),
         ]);
     });
 
     // Configuration
     Route::prefix('v1/configuration')->group(function () {
-        Route::get('/company', function () {
-            // Return company configuration
-            $company = CompanyModel::query()->first();
+        Route::get('/company', function (Request $request) {
+            $company = $request->attributes->get('tenant');
+
             if (!$company) {
                 return response()->json(['message' => 'Company not found'], 404);
             }
+
             return response()->json($company);
         });
 
@@ -66,10 +109,10 @@ Route::middleware('auth:sanctum')->group(function () {
                 'tax_id' => 'nullable|string|max:20',
             ]);
 
-            // Update or create company configuration
-            $company = CompanyModel::query()->first();
+            $company = $request->attributes->get('tenant');
+
             if (!$company) {
-                $company = new CompanyModel();
+                return response()->json(['message' => 'Company not found'], 404);
             }
 
             if ($request->hasFile('logo')) {
@@ -110,6 +153,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/contacts/{contact}', [ContactController::class, 'show']);
         Route::put('/contacts/{contact}', [ContactController::class, 'update']);
         Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']);
+
+        // Users
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::put('/users/{user}/password', [UserController::class, 'updatePassword']);
+        Route::patch('/users/{user}/toggle', [UserController::class, 'toggle']);
 
         // Contact Functions (lookup)
         Route::get('/contact-functions', function () {
@@ -156,7 +207,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Supplier Orders
         Route::get('/supplier-orders', function () {
-            return SupplierOrder::paginate();
+            return SupplierOrder::query()->paginate();
         });
         Route::post('/supplier-orders', function (Request $request) {
             $supplierOrder = SupplierOrder::create($request->all());

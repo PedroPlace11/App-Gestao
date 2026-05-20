@@ -27,11 +27,13 @@ import TaxRatesPage from '../pages/TaxRatesPage.vue';
 import LogsPage from '../pages/LogsPage.vue';
 import CompanyPage from '../pages/CompanyPage.vue';
 import ProfilePage from '../pages/ProfilePage.vue';
+import TenantManagement from '../pages/TenantManagement.vue';
 
 const routes = [
   { path: '/', component: DashboardPage, meta: { title: 'Dashboard' } },
   { path: '/dashboard', component: DashboardPage, meta: { title: 'Dashboard' } },
   { path: '/perfil', component: ProfilePage, meta: { title: 'Perfil' } },
+  { path: '/tenants', component: TenantManagement, meta: { title: 'Tenants' } },
 
   // CRM
   { path: '/clientes', component: ClientsPage, meta: { title: 'Clientes' } },

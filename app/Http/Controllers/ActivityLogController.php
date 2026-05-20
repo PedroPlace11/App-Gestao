@@ -14,12 +14,18 @@ class ActivityLogController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $tenantId = (int) ($request->attributes->get('tenant_id') ?? 0);
+
         $query = DB::table('activity_log')
             ->leftJoin('users', 'users.id', '=', 'activity_log.causer_id')
             ->select([
                 'activity_log.*',
                 'users.name as user_name',
             ]);
+
+        if ($tenantId > 0) {
+            $query->whereRaw("JSON_EXTRACT(properties, '$.tenant_id') = ?", [$tenantId]);
+        }
 
         if ($request->filled('user_id')) {
             $query->where('causer_id', $request->integer('user_id'));
@@ -42,15 +48,23 @@ class ActivityLogController extends Controller
     /**
      * Display the specified activity log.
      */
-    public function show(int $activity): JsonResponse
+    public function show(Request $request, int $activity): JsonResponse
     {
+        $tenantId = (int) ($request->attributes->get('tenant_id') ?? 0);
+
         $log = DB::table('activity_log')
             ->leftJoin('users', 'users.id', '=', 'activity_log.causer_id')
             ->where('activity_log.id', $activity)
             ->select([
                 'activity_log.*',
                 'users.name as user_name',
-            ])
+            ]);
+
+        if ($tenantId > 0) {
+            $log->whereRaw("JSON_EXTRACT(activity_log.properties, '$.tenant_id') = ?", [$tenantId]);
+        }
+
+        $log = $log
             ->first();
 
         return response()->json($log);

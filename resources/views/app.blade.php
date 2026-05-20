@@ -96,8 +96,48 @@
     </style>
 </head>
 <body>
+    @php
+        $hasMembershipTable = \Illuminate\Support\Facades\Schema::hasTable('company_user');
+        $hasCompanySlug = \Illuminate\Support\Facades\Schema::hasColumn('companies', 'slug');
+        $authUser = auth()->user();
+        $availableTenants = [];
+        $activeTenantId = null;
+
+        if ($authUser) {
+            if ($hasMembershipTable) {
+                $tenantColumns = ['companies.id', 'companies.name'];
+
+                if ($hasCompanySlug) {
+                    $tenantColumns[] = 'companies.slug';
+                }
+
+                $availableTenants = $authUser->companies()
+                    ->orderBy('name', 'asc')
+                    ->get($tenantColumns)
+                    ->toArray();
+            } else {
+                $companyColumns = ['id', 'name'];
+
+                if ($hasCompanySlug) {
+                    $companyColumns[] = 'slug';
+                }
+
+                $company = \App\Models\Company::query()->orderBy('name', 'asc')->first($companyColumns);
+                $availableTenants = $company ? [$company->toArray()] : [];
+            }
+
+            $activeTenantId = session('active_company_id')
+                ?? $authUser->active_company_id
+                ?? ($availableTenants[0]['id'] ?? null);
+        }
+    @endphp
+
     <script>
-        window.__AUTH_USER__ = @json(auth()->user());
+        window.__AUTH_USER__ = @json($authUser);
+        window.__TENANT_CONTEXT__ = {
+            active_tenant_id: @json($activeTenantId),
+            tenants: @json($availableTenants),
+        };
 
         // Initialize theme immediately on page load
         (function() {

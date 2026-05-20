@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SupplierOrder extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'number', 'date', 'supplier_id', 'order_id', 'status',
+        'company_id', 'number', 'date', 'supplier_id', 'order_id', 'status',
         'total_value', 'user_id', 'items', 'notes',
     ];
 
